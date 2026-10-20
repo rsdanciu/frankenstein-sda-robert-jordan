@@ -20,15 +20,30 @@ turn drives the look of the world.
    - suggest an organisational structure for the analysis or transitions between ideas;
    - choose interpretive values (scene end values, quote deltas) or say which quotes belong where.
    Everything about the book itself is the students' original work. Claude builds the software only.
-3. **No filler content.** Content fields contain only `[PLACEHOLDER]`. Numbers that encode an
-   interpretation are neutral placeholders: all `nihilism` end values and the start value are
-   `0.5`, and every quote delta is `0`. Never write sample quotes, analysis, or summaries.
+3. **No filler content.** Any content field the students have not supplied contains only
+   `[PLACEHOLDER]`. Numbers that encode an interpretation are neutral placeholders until the
+   students set them: all `nihilism` end values and the start value are `0.5`, and every quote
+   delta is `0`. Never write sample quotes, analysis, or summaries.
+   **When the students supply content, insert it verbatim.** Do not change wording, spelling,
+   capitalisation, punctuation, or formatting (e.g. don't add italics or a trailing period).
 4. **Document every design choice** in this file (section 12) and explain why. Update this file
    whenever configuration, structure, or a design decision changes.
 5. **Chat log.** Append every prompt received and every response given to `chatlogs.md`: the
    full prompt, the full response, and timestamps. Do this every turn, before finishing.
 6. Location names, the order of locations, and the JSON schema come from the students. Do not
    rename or reorder them without being asked.
+
+### Student-supplied content so far (do not edit)
+
+| Where | Field | Value |
+|---|---|---|
+| world.json | `meta.title` | Frankenstein SDA |
+| world.json | `meta.subtitle` | Robert Danciu and Jordan Abell |
+| world.json | `ending.title` | The Monster’s Journey Has Ended |
+| world.json | `ending.text` | The Monster has reached psychological nihilism |
+| bibliography.json | `title`, `entries` | Works Cited, with the Nietzsche and Shelley entries exactly as supplied |
+
+Still `[PLACEHOLDER]`: `nihilismExplanation.text` and every quote/analysis/page field.
 
 ---
 
@@ -66,7 +81,7 @@ public/
   assets/                     images/audio/models for future scenes (served as-is)
   json/
     world.json                all locations, order, coordinates, end values, start value
-    bibliography.json         bibliography entries (placeholder)
+    bibliography.json         Works Cited heading + entries
     scenes/<id>.json          one file per location; name = the id in world.json
 src/
   main.js                     entry: fonts, CSS, App
@@ -98,7 +113,7 @@ src/
     registry.js               location id → scene class
     locations/<id>.js         one dedicated scene module per location (currently extend PlaceholderScene)
   ui/
-    StartMenu.js  HUD.js  QuoteModal.js  EndingMenu.js  WorldLabels.js  dom.js
+    StartMenu.js  HUD.js  QuoteModal.js  InfoModal.js  EndingMenu.js  WorldLabels.js  dom.js
   styles/main.css             glassmorphism tokens and all UI styles
 CLAUDE.md                     this file
 chatlogs.md                   full prompt/response log
@@ -117,7 +132,8 @@ All runtime JSON is fetched with `publicUrl(path)` = `import.meta.env.BASE_URL +
 
 ```json
 {
-  "meta":   { "title": "[PLACEHOLDER]", "subtitle": "[PLACEHOLDER]" },
+  "meta":   { "title": "Frankenstein SDA", "subtitle": "Robert Danciu and Jordan Abell" },
+  "nihilismExplanation": { "title": "Nihilism Coefficient", "text": "[PLACEHOLDER]" },
   "start":  { "truth": 0.5, "unity": 0.5, "purpose": 0.5 },
   "locations": [
     {
@@ -129,12 +145,15 @@ All runtime JSON is fetched with `publicUrl(path)` = `import.meta.env.BASE_URL +
       "nihilism": { "truth": 0.5, "unity": 0.5, "purpose": 0.5 }
     }
   ],
-  "ending": { "title": "[PLACEHOLDER]", "text": "[PLACEHOLDER]" }
+  "ending": { "title": "The Monster’s Journey Has Ended", "text": "The Monster has reached psychological nihilism" }
 }
 ```
 
-- `meta`: start-menu title/subtitle. `ending`: final-menu title/text. Kept in JSON so no
-  content lives in code.
+- `meta`: start-menu title/subtitle (the title also becomes the browser-tab title).
+  `ending`: final-menu title/text. Kept in JSON so no content lives in code.
+- `nihilismExplanation`: the large popup opened by **About the Nihilism Coefficient** on the start
+  menu. `text` may be a string or an array of strings (one per paragraph); `
+` line breaks are kept.
 - `start`: the coefficient components at the very beginning of the journey.
 - `locations[].nihilism`: each scene's **end value** (the global value is set to it when the scene completes).
 - `id`: camelCase, no spaces, also the scene file name **and** the key in `src/scenes/registry.js`.
@@ -183,7 +202,9 @@ which are required are the students' decisions.
 
 ### `public/json/bibliography.json`
 
-`{ "entries": ["[PLACEHOLDER]"] }`, one string per entry, shown with a hanging indent.
+`{ "title": "Works Cited", "entries": ["…", "…"] }`. `title` is the heading of the bibliography
+view (falls back to "Bibliography"). One string per entry, shown in the order given with a hanging
+indent. Text wrapped in `*asterisks*` renders in italics; nothing is italicised unless the students add them.
 
 ---
 
@@ -263,6 +284,8 @@ Everything coefficient-related is in this single file, with the mapping document
 `App.js` states: `loading → start → globe ⇄ transition ⇄ scene → … → ending`.
 
 - **Start menu** (glass) over the slowly turning globe → **Begin** → camera pans to location 1.
+  **About the Nihilism Coefficient** opens a large glass popup (`InfoModal`) with the text from
+  `world.json` → `nihilismExplanation`; Esc, ×, Close, or a backdrop click closes it.
 - **Strict order:** only the next location's marker is clickable; others show a toast. Dev mode unlocks all.
 - **Enter scene:** great-circle pan to the marker (lifting away for long hops) → dive toward the
   marker as the haze rises → the scene is built and shaders compiled behind the haze → the camera
@@ -364,6 +387,9 @@ The current look is a neutral starting point for the students to adjust.
 | All JSON text via `textContent` | Quotes render exactly as written; no HTML injection. |
 | No progress persistence | A reload is a clean start for presentations. |
 | Manual-only deploy workflow | The brief starts with localhost; nothing publishes until the students choose. |
+| Explanation popup is a generic `InfoModal` fed from JSON | The text stays editable without touching code, and the same popup can show other long text later. |
+| Popup has a large minimum height (≤ 62% of the screen) | Reads as a "large popup" even before the explanation is written; long text scrolls inside it. |
+| Bibliography heading read from JSON; optional `*italics*` | The students control the heading and any formatting; entries are shown exactly as written. |
 
 ---
 
@@ -377,8 +403,8 @@ These are **theirs** to make. Claude must not choose them.
   Rural Germany (51.16, 10.45, centre of Germany), Scotland (56.49, −4.20, centre of Scotland),
   The path to Rural Russia (57.0, 40.0), The Arctic and Walton's boat (79.5, 5.0). Both Geneva scenes use
   Geneva (46.20, 6.14). Edit in world.json.
-- All content: titles, quotes, analysis, pages, `isNietzsche`, quote counts/steps/required flags,
-  deltas, start and end values, ending text, bibliography.
+- All remaining content: the Nihilism Coefficient explanation, quotes, analysis, pages,
+  `isNietzsche`, quote counts/steps/required flags, deltas, start and end values.
 - The Monster's look (`MONSTER_STYLE`) and each scene's design.
 
 ---

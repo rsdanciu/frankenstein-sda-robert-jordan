@@ -264,6 +264,7 @@ export class App {
   }
 
   async #showEnding() {
+    if (this.state === 'start') this.startMenu.hide(); // dev shortcut from the start screen
     this.state = 'ending';
     this.globe.setInteractive(false);
     this.picker.setEnabled(false);

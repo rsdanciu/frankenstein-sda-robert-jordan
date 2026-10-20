@@ -751,10 +751,14 @@ body {
 
 /* Large explanation popup (InfoModal) */
 .info-modal {
+  display: flex;
+  flex-direction: column;
   width: min(860px, 100%);
+  min-height: min(62dvh, 560px); /* stays large even before the explanation is written */
 }
 
 .info-body {
+  flex: 1;
   margin-top: 18px;
 }
 
