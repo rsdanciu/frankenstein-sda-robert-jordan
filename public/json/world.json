@@ -1,0 +1,73 @@
+{
+  "meta": {
+    "title": "Frankenstein SDA",
+    "subtitle": "Robert Danciu and Jordan Abell"
+  },
+  "nihilismExplanation": {
+    "title": "Nihilism Coefficient",
+    "text": "[PLACEHOLDER]"
+  },
+  "start": { "truth": 0.5, "unity": 0.5, "purpose": 0.5 },
+  "locations": [
+    {
+      "id": "ingolstadt",
+      "name": "Ingolstadt",
+      "order": 1,
+      "latitude": 48.7665,
+      "longitude": 11.4258,
+      "nihilism": { "truth": 0.5, "unity": 0.5, "purpose": 0.5 }
+    },
+    {
+      "id": "ruralGermany",
+      "name": "Rural Germany (The Cottagers)",
+      "order": 2,
+      "latitude": 51.1634,
+      "longitude": 10.4477,
+      "nihilism": { "truth": 0.5, "unity": 0.5, "purpose": 0.5 }
+    },
+    {
+      "id": "genevaMountains",
+      "name": "Geneva (Mountains)",
+      "order": 3,
+      "latitude": 46.2044,
+      "longitude": 6.1432,
+      "nihilism": { "truth": 0.5, "unity": 0.5, "purpose": 0.5 }
+    },
+    {
+      "id": "scotland",
+      "name": "Scotland",
+      "order": 4,
+      "latitude": 56.4907,
+      "longitude": -4.2026,
+      "nihilism": { "truth": 0.5, "unity": 0.5, "purpose": 0.5 }
+    },
+    {
+      "id": "genevaWedding",
+      "name": "Geneva (Wedding)",
+      "order": 5,
+      "latitude": 46.2044,
+      "longitude": 6.1432,
+      "nihilism": { "truth": 0.5, "unity": 0.5, "purpose": 0.5 }
+    },
+    {
+      "id": "pathToRuralRussia",
+      "name": "The path to Rural Russia",
+      "order": 6,
+      "latitude": 57.0,
+      "longitude": 40.0,
+      "nihilism": { "truth": 0.5, "unity": 0.5, "purpose": 0.5 }
+    },
+    {
+      "id": "arcticWaltonsBoat",
+      "name": "The Arctic and Walton's boat",
+      "order": 7,
+      "latitude": 79.5,
+      "longitude": 5.0,
+      "nihilism": { "truth": 0.5, "unity": 0.5, "purpose": 0.5 }
+    }
+  ],
+  "ending": {
+    "title": "The Monster’s Journey Has Ended",
+    "text": "The Monster has reached psychological nihilism"
+  }
+}

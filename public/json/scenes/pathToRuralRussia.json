@@ -1,0 +1,38 @@
+{
+  "id": "pathToRuralRussia",
+  "quotes": [
+    {
+      "quote": "[PLACEHOLDER]",
+      "analysis": "[PLACEHOLDER]",
+      "page": "[PLACEHOLDER]",
+      "isNietzsche": false,
+      "objectId": "pathToRuralRussia-object-1",
+      "order": 1,
+      "nihilism": { "truth": 0, "unity": 0, "purpose": 0 },
+      "step": 1,
+      "required": true
+    },
+    {
+      "quote": "[PLACEHOLDER]",
+      "analysis": "[PLACEHOLDER]",
+      "page": "[PLACEHOLDER]",
+      "isNietzsche": false,
+      "objectId": "pathToRuralRussia-object-2",
+      "order": 2,
+      "nihilism": { "truth": 0, "unity": 0, "purpose": 0 },
+      "step": 1,
+      "required": false
+    },
+    {
+      "quote": "[PLACEHOLDER]",
+      "analysis": "[PLACEHOLDER]",
+      "page": "[PLACEHOLDER]",
+      "isNietzsche": false,
+      "objectId": "pathToRuralRussia-object-3",
+      "order": 3,
+      "nihilism": { "truth": 0, "unity": 0, "purpose": 0 },
+      "step": 2,
+      "required": true
+    }
+  ]
+}

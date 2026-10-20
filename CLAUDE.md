@@ -1,0 +1,391 @@
+# CLAUDE.md: Frankenstein Interactive Journey
+
+An interactive 3D website (Three.js + Vite, plain JavaScript) for an English-class creative
+analysis of *Frankenstein* and works of Nietzsche. The user travels across a procedural Earth,
+following the Monster's journey through seven locations. Each location is a scene with clickable
+components that reveal quotes and analysis and shift a global **Nihilism Coefficient**, which in
+turn drives the look of the world.
+
+---
+
+## 0. Project rules (highest priority, always follow)
+
+1. **Start every response with "Of course, Robert".**
+2. **Academic integrity: no literary content from Claude, ever.** The students' course policy
+   forbids any AI-generated ideas or language for submitted work. Claude must never:
+   - write, suggest, reword, or "improve" quotes, analysis, summaries, interpretations, or
+     bibliography entries;
+   - pick or suggest evidence/quotes, analyse evidence, or make connections between texts
+     (including between *Frankenstein* and Nietzsche);
+   - suggest an organisational structure for the analysis or transitions between ideas;
+   - choose interpretive values (scene end values, quote deltas) or say which quotes belong where.
+   Everything about the book itself is the students' original work. Claude builds the software only.
+3. **No filler content.** Content fields contain only `[PLACEHOLDER]`. Numbers that encode an
+   interpretation are neutral placeholders: all `nihilism` end values and the start value are
+   `0.5`, and every quote delta is `0`. Never write sample quotes, analysis, or summaries.
+4. **Document every design choice** in this file (section 12) and explain why. Update this file
+   whenever configuration, structure, or a design decision changes.
+5. **Chat log.** Append every prompt received and every response given to `chatlogs.md`: the
+   full prompt, the full response, and timestamps. Do this every turn, before finishing.
+6. Location names, the order of locations, and the JSON schema come from the students. Do not
+   rename or reorder them without being asked.
+
+---
+
+## 1. Tech stack and commands
+
+| Item | Choice |
+|---|---|
+| Build tool | Vite 8 (`vite.config.js`, `base: '/frankenstein-sda-robert-jordan/'`) |
+| Language | Plain JavaScript (ES modules), no framework, no TypeScript |
+| 3D | `three` r186 (npm), addons from `three/addons/...` |
+| Coastline data | `world-atlas` (Natural Earth 1:50m land, public domain) + `topojson-client` + `d3-geo` |
+| Fonts | `@fontsource/inter`, `@fontsource/cormorant-garamond`, `@fontsource/unifrakturcook` (bundled, no CDN) |
+| Node | ≥ 20.19 or ≥ 22.12 (Vite 8 requirement) |
+
+```bash
+npm install          # once
+npm run dev          # http://localhost:5173/frankenstein-sda-robert-jordan/
+npm run dev -- --host  # also reachable from a phone on the same Wi-Fi
+npm run build        # → dist/
+npm run preview      # serve dist/ exactly as GitHub Pages would
+```
+
+Developer mode: append `?dev=1` (see section 10).
+
+---
+
+## 2. Folder layout
+
+```
+index.html                    HTML shell + loading indicator
+vite.config.js                base path for GitHub Pages
+.github/workflows/deploy.yml  manual-trigger GitHub Pages deploy
+public/
+  .nojekyll
+  assets/                     images/audio/models for future scenes (served as-is)
+  json/
+    world.json                all locations, order, coordinates, end values, start value
+    bibliography.json         bibliography entries (placeholder)
+    scenes/<id>.json          one file per location; name = the id in world.json
+src/
+  main.js                     entry: fonts, CSS, App
+  core/
+    App.js                    state machine + scene/globe transitions
+    renderer.js               WebGLRenderer, EffectComposer, GradeShader (saturation/vignette/haze)
+    data.js                   JSON loading via import.meta.env.BASE_URL + normalisation
+    progress.js               strict journey order
+    Picker.js                 click-vs-drag picking for 3D objects
+    tween.js                  promise-based tweens on the main loop clock
+    events.js                 tiny event emitter
+    dev.js                    ?dev=1 flag + dev panel
+  nihilism/
+    nihilism.js               ALL Nihilism Coefficient handling (state, deltas, visuals, validation)
+  globe/
+    GlobeView.js              globe scene, camera moves (pan / dive / emerge), marker selection
+    earth.js                  procedural Earth, clouds, atmosphere, stars, land-mask rasterising
+    shaders.js                GLSL (noise, Earth, clouds, atmosphere, stars)
+    markers.js                location markers + labels
+    arcs.js                   journey arcs between completed locations
+    geo.js                    lat/lon maths, duplicate-location fan-out (Geneva ×2)
+  monster/
+    Monster.js                the Monster (procedural, animated); MONSTER_STYLE
+  scenes/
+    BaseScene.js              base class + hooks for every location scene
+    PlaceholderScene.js       generic placeholder (reads the scene JSON)
+    ComponentTracker.js       steps, required/optional, enable/disable, completion
+    environment.js            sky dome
+    registry.js               location id → scene class
+    locations/<id>.js         one dedicated scene module per location (currently extend PlaceholderScene)
+  ui/
+    StartMenu.js  HUD.js  QuoteModal.js  EndingMenu.js  WorldLabels.js  dom.js
+  styles/main.css             glassmorphism tokens and all UI styles
+CLAUDE.md                     this file
+chatlogs.md                   full prompt/response log
+```
+
+---
+
+## 3. JSON data
+
+All runtime JSON is fetched with `publicUrl(path)` = `import.meta.env.BASE_URL + path`
+(`src/core/data.js`), so the same code works on localhost and GitHub Pages. Requests use
+`cache: 'no-cache'` so edits show on refresh. Text from JSON is always inserted with
+`textContent` (line breaks are kept via `white-space: pre-line`).
+
+### `public/json/world.json`
+
+```json
+{
+  "meta":   { "title": "[PLACEHOLDER]", "subtitle": "[PLACEHOLDER]" },
+  "start":  { "truth": 0.5, "unity": 0.5, "purpose": 0.5 },
+  "locations": [
+    {
+      "id": "ingolstadt",
+      "name": "Ingolstadt",
+      "order": 1,
+      "latitude": 48.7665,
+      "longitude": 11.4258,
+      "nihilism": { "truth": 0.5, "unity": 0.5, "purpose": 0.5 }
+    }
+  ],
+  "ending": { "title": "[PLACEHOLDER]", "text": "[PLACEHOLDER]" }
+}
+```
+
+- `meta`: start-menu title/subtitle. `ending`: final-menu title/text. Kept in JSON so no
+  content lives in code.
+- `start`: the coefficient components at the very beginning of the journey.
+- `locations[].nihilism`: each scene's **end value** (the global value is set to it when the scene completes).
+- `id`: camelCase, no spaces, also the scene file name **and** the key in `src/scenes/registry.js`.
+  GitHub Pages is case-sensitive, so the id, file name, and registry key must match exactly.
+- `order`: 1…7 without gaps; navigation follows it strictly.
+
+Current ids, in order: `ingolstadt`, `ruralGermany`, `genevaMountains`, `scotland`,
+`genevaWedding`, `pathToRuralRussia`, `arcticWaltonsBoat`.
+
+### `public/json/scenes/<id>.json`
+
+```json
+{
+  "id": "ingolstadt",
+  "quotes": [
+    {
+      "quote": "[PLACEHOLDER]",
+      "analysis": "[PLACEHOLDER]",
+      "page": "[PLACEHOLDER]",
+      "isNietzsche": false,
+      "objectId": "ingolstadt-object-1",
+      "order": 1,
+      "nihilism": { "truth": 0, "unity": 0, "purpose": 0 },
+      "step": 1,
+      "required": true
+    }
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `quote` | the quotation text |
+| `analysis` | the students' analysis |
+| `page` | page number (string or number) |
+| `isNietzsche` | `true` → Nietzsche styling (Fraktur "Nietzsche" seal, italic, crimson-tinted glass) |
+| `objectId` | id of the 3D object that reveals this quote (the scene registers an object with this id) |
+| `order` | order of the quote within the scene (sorting and validation order within a step) |
+| `nihilism` | **signed deltas**; missing keys = 0, so a quote may change only one component |
+| `step` | sequence group; step N unlocks once every *required* quote in earlier steps is viewed |
+| `required` | `true` = needed to complete the scene; `false` = optional |
+
+Each placeholder scene currently has three structural slots (step 1 required, step 1 optional,
+step 2 required) only to exercise the step/required logic. The number of quotes, steps, and
+which are required are the students' decisions.
+
+### `public/json/bibliography.json`
+
+`{ "entries": ["[PLACEHOLDER]"] }`, one string per entry, shown with a hanging indent.
+
+---
+
+## 4. Nihilism Coefficient (`src/nihilism/nihilism.js`)
+
+Everything coefficient-related is in this single file, with the mapping documented in comments.
+
+- **Global variable:** `nihilism` (exported) and `window.NIHILISM`. Holds `truth`, `unity`,
+  `purpose` (each clamped to 0–1). `nihilism.value` = their average = the coefficient.
+  `nihilism.history` records every change (start, each quote, each scene end) for the ending chart.
+- **Timeline:** scene 1 starts at `world.start`; scene N starts at scene N−1's end value. On
+  completion the global value is set to the scene's world.json end value. It is set again on Proceed
+  (so viewing more after completion can't move it).
+- **Deltas:** `applyDelta()` adds and then clamps each component to [0, 1]. A clamp is logged with `console.info`.
+- **Validation and logging:**
+  - At startup, `validateTimeline()` simulates each scene's *required* quotes (step → order) from
+    its start value and logs a collapsed `console.table` ("[Nihilism] Timeline check") plus a
+    `console.warn` for every scene whose required quotes don't land on its end value.
+  - At completion, `checkSceneEnd()` compares the value actually reached (including optional quotes
+    the user viewed) to the end value and `console.warn`s on a mismatch, then snaps.
+- **Visuals:** `applyNihilismVisuals(coefficient)` is the single mapping function. It runs every frame
+  with a smoothed copy of the value (`NIHILISM_VISUALS.smoothing`). Parameters (edit `NIHILISM_VISUALS`):
+
+  | Parameter | Drives |
+  |---|---|
+  | `saturation` | whole-frame colour saturation (grade pass) |
+  | `vignette` | screen-edge darkening (grade pass) |
+  | `lightIntensity` | multiplier on every bound light (globe sun/ambient, scene hemisphere + sun) |
+  | `fogDensity` | scene FogExp2; globe fog × `globeFogScale` |
+  | `skyTop`, `skyHorizon` | scene sky dome; horizon also fog colour and transition haze; skyTop tints the globe atmosphere |
+  | `space` | globe background and globe fog colour |
+
+  Each is `{ atZero, atOne }`, linearly interpolated (optional `curve`). Views hand over their
+  Three.js objects with `bindNihilismTargets({ lights, fogs, colors })`; scenes do it through
+  `BaseScene.bindNihilism()` so bindings are removed on dispose.
+
+---
+
+## 5. Scenes and components
+
+- `src/scenes/registry.js` maps each id to a class in `src/scenes/locations/<id>.js`. All seven
+  currently extend `PlaceholderScene`.
+- `BaseScene` build order: `buildEnvironment` → `buildBackground` → `buildForeground` → Monster is
+  created → `placeMonster` → `buildInteractables`. Hooks: `onUpdate`, `onHover`, `onQuoteOpened`,
+  `onQuoteViewed`, `onStepChange`, `onComplete`, `onDispose`, `styleInteractable`.
+  `static cameraHome = { position, target }` sets the landing framing.
+- Every quote `objectId` must be registered with `this.registerInteractable(objectId, object3D)`;
+  a missing one is warned about in the console.
+- `ComponentTracker` (`this.tracker`):
+  - current step = lowest step with an unviewed required quote; components with `step ≤ current`
+    are active; later ones are locked (click → "This unlocks at step N.");
+  - `setEnabled(objectId, true|false)` forces a component on/off; `setEnabled(objectId, null)`
+    returns it to the step rule (for scene-specific sequencing);
+  - complete when every required quote is viewed (zero required → completes on arrival).
+- **Quote menu** (`QuoteModal`): page 1 quote + page, page 2 analysis, page 3 impact. Enter or
+  **Next** advances; Esc/× closes early. The delta is applied when page 3 is first reached, so the
+  world changes while the impact is on screen. A quote counts as viewed only once it reaches page 3.
+  Re-opening shows the original impact without re-applying it.
+- On completion the HUD shows **Proceed**; clicking it returns to the globe and unlocks the next location.
+
+### Recipe: building a dedicated scene
+
+1. In `src/scenes/locations/<id>.js`, change `extends PlaceholderScene` to `extends BaseScene`
+   (import from `../BaseScene.js`).
+2. Override `buildBackground()` / `buildForeground()` for the set, `placeMonster(monster)` for his
+   position, and `buildInteractables()` to create objects and register each quote `objectId`.
+3. Optionally override `buildEnvironment()` (call `super.buildEnvironment()` to keep the neutral
+   sky/fog/lights bound to the coefficient) and `static cameraHome`.
+4. Use `onQuoteViewed` / `onStepChange` / `onComplete` and `this.monster` (`walkTo`, `lookAt`,
+   `turnTowards`, `setAnimation`, `joints`) for animation, and `this.tracker.setEnabled()` for custom gating.
+5. Put scene media in `public/assets/<id>/` and load it with `publicUrl('assets/<id>/...')`.
+
+---
+
+## 6. Navigation, transitions and state
+
+`App.js` states: `loading → start → globe ⇄ transition ⇄ scene → … → ending`.
+
+- **Start menu** (glass) over the slowly turning globe → **Begin** → camera pans to location 1.
+- **Strict order:** only the next location's marker is clickable; others show a toast. Dev mode unlocks all.
+- **Enter scene:** great-circle pan to the marker (lifting away for long hops) → dive toward the
+  marker as the haze rises → the scene is built and shaders compiled behind the haze → the camera
+  descends from high above into the scene as the haze clears.
+- **Leave scene (Proceed):** the camera rises out of the scene into haze → emerges above the marker on
+  the globe → the journey arc to the next location draws → pan to the next marker.
+- After location 7 the camera pulls out to an overview and the **ending menu** opens: line chart of the
+  coefficient + components over every recorded change (crosshair tooltip, arrow keys on focus),
+  per-scene table, then **Bibliography** and **Restart journey**.
+- Progress is not saved between page loads (a reload restarts the journey).
+
+---
+
+## 7. Globe
+
+- Procedural: no image textures. Natural Earth land polygons are rasterised at startup into an
+  equirectangular mask (4096 px desktop, 2048 px touch) plus two blurred versions (for shallow
+  water and inland/coast). The Earth shader colours oceans, shelves, biomes by latitude + noise,
+  ice caps, sea ice, a small sun glint, and an inner rim. Separate animated cloud shell
+  (domain-warped noise), additive atmosphere glow, twinkling starfield.
+- The sun follows the camera (upper-left) so the side you look at is always lit.
+- Markers: pin + ring + glow, kept at a steady on-screen size. States: `next` (gold, pulsing, name
+  shown), `completed` (blue, number), `locked` (grey, number), `available` (dev). DOM labels are
+  clickable and hidden when on the far side.
+- **Two Geneva scenes:** world.json keeps the true coordinates; `spreadDuplicates()` fans out
+  locations within 25 km of each other by `DUPLICATE_SEPARATION_KM` (110 km) west → east in story
+  order, and their labels open away from each other.
+- Camera constants: `GLOBE_CAMERA` in `GlobeView.js`. Portrait screens pull the camera back.
+
+---
+
+## 8. The Monster (`src/monster/Monster.js`)
+
+One procedural figure (Three.js primitives in a joint hierarchy) used in every scene so he is always
+the same silhouette. `MONSTER_STYLE` (height and colours) changes him everywhere at once. Animations
+are procedural: idle (breathing, sway, glances), walk (heavy gait, blended), head `lookAt`,
+`turnTowards`, `walkTo(point, speed)`. All joints are exposed via `monster.joints` for custom poses.
+The current look is a neutral starting point for the students to adjust.
+
+---
+
+## 9. UI and glassmorphism (`src/styles/main.css`)
+
+- Tokens at `:root`: translucent gradient + dark tint, `backdrop-filter: blur(18px) saturate(140%)`,
+  hairline light border, inset highlight, soft shadow. Fallback to an opaque panel where
+  backdrop-filter is unsupported. Always-dark UI (it floats over space and dim scenes).
+- Type: Inter (UI), Cormorant Garamond (titles, quotes), UnifrakturCook (Nietzsche seal only).
+- Gold `--accent` = "next / primary action". Component identity colours (`--series-truth` blue,
+  `--series-unity` orange, `--series-purpose` green, `--series-value` ink) are the same in the HUD
+  meter, impact page, and ending chart; validated for colour-blind separation and ≥ 3:1 contrast on
+  the glass surface. Changes are shown in ink (solid = gain, dashed = loss), never red/green, so the
+  UI implies no value judgement.
+- Responsive down to phone width; `prefers-reduced-motion` respected.
+
+---
+
+## 10. Developer mode (`?dev=1`)
+
+- Every location unlocked (any order, re-enterable).
+- Glass panel bottom-left: **Coefficient** slider (sets all three components), one slider per
+  component, FPS readout, and buttons: Complete scene (applies remaining required deltas and completes),
+  Exit scene, Show ending, Restart. Entering a scene still resets the value to that scene's start value.
+- `window.__app` (the App) and `window.NIHILISM` for console debugging.
+
+---
+
+## 11. GitHub Pages
+
+- `base: '/frankenstein-sda-robert-jordan/'` in `vite.config.js`. Never hard-code absolute paths;
+  use `publicUrl()` for files in `public/` and ES imports for files in `src/`.
+- `.github/workflows/deploy.yml` builds and deploys `dist/` but **only when run manually**
+  (Actions → Deploy to GitHub Pages → Run workflow). Before the first run: Settings → Pages →
+  Source = "GitHub Actions". Switch the trigger to `push` when you want automatic deploys.
+- `public/.nojekyll` is included in case Pages is ever switched to branch deploys.
+
+---
+
+## 12. Design decisions (and why)
+
+| Decision | Why |
+|---|---|
+| One renderer, separate `THREE.Scene` per view (globe, each location) joined by a haze transition | Globe-scale and person-scale units can't share one scene without precision problems; the haze hides the switch so it reads as one continuous camera move. |
+| Post-processing grade pass for saturation/vignette/haze | One place changes the whole frame, so every current and future scene obeys the coefficient without per-material work. |
+| `applyNihilismVisuals` + bindings registry | The required single mapping function lives in one file; scenes only hand over their lights/fog/sky. |
+| Visuals follow a smoothed value | Quote impacts read as the world shifting, not popping. |
+| Delta applied on reaching the Impact page | The user sees the numbers change and the world respond at the same moment. |
+| Pinned to the end value after completion, and again on Proceed | Guarantees the rule "the global value equals the scene's end value at the end of each scene". |
+| Startup + runtime validation, warnings only | Authoring mistakes are visible in the console without ever blocking a presentation. |
+| Step rule = lowest step with an unviewed required quote | Optional quotes never block progress; scenes can still override with `setEnabled`. |
+| Strict order in `JourneyProgress`, unlocked by `?dev=1` | Matches the brief; testing stays fast. |
+| Procedural Earth from Natural Earth outlines | "Created with Three.js" and recognisable coastlines, with no texture files to license or host. |
+| Coastline JSON imported with `?url` (separate file, base-aware) | Keeps the JS bundle small; Vite prefixes it with the same base as `BASE_URL`. |
+| Sun follows the camera | Every location is lit when the camera arrives; no dark side to fight. |
+| Duplicate coordinates fanned out in code, not in JSON | world.json stays geographically true; the two Geneva markers stay distinct. |
+| Placeholder scenes depict nothing about their location | Scene design and meaning belong to the students. |
+| Monster built procedurally in one module | Guarantees the identical figure in every scene, tunable in one place. |
+| Bundled fonts | Works offline and on Pages with no third-party requests. |
+| Neutral tone mapping, MSAA render target, pixel ratio ≤ 2 (≤ 1.5 on touch) | Faithful colours, smooth edges, and 60 fps headroom (measured at the display's 144 Hz on a desktop GPU at 3840×1822). |
+| All JSON text via `textContent` | Quotes render exactly as written; no HTML injection. |
+| No progress persistence | A reload is a clean start for presentations. |
+| Manual-only deploy workflow | The brief starts with localhost; nothing publishes until the students choose. |
+
+---
+
+## 13. Open decisions for the students
+
+These are **theirs** to make. Claude must not choose them.
+
+- **Direction of the visual mapping.** Defaults read a HIGH coefficient as vivid/bright/clear and a
+  LOW one as grey/dim/foggy. To invert, swap `atZero`/`atOne` in `NIHILISM_VISUALS`.
+- **Coordinates** for places the brief names only as regions are rough geographic placeholders:
+  Rural Germany (51.16, 10.45, centre of Germany), Scotland (56.49, −4.20, centre of Scotland),
+  The path to Rural Russia (57.0, 40.0), The Arctic and Walton's boat (79.5, 5.0). Both Geneva scenes use
+  Geneva (46.20, 6.14). Edit in world.json.
+- All content: titles, quotes, analysis, pages, `isNietzsche`, quote counts/steps/required flags,
+  deltas, start and end values, ending text, bibliography.
+- The Monster's look (`MONSTER_STYLE`) and each scene's design.
+
+---
+
+## 14. Code conventions
+
+- ES modules, 2-space indent, single quotes, semicolons, trailing commas; `#private` members for internals.
+- Comment density: a short header per module explaining its role; comments explain *why*, not *what*.
+- Never put book content in code. UI chrome text (buttons, hints) is fine.
+- Run `npm run build` after changes; check the console for `[Nihilism]`, `[world.json]`, `[scenes/...]` warnings.
