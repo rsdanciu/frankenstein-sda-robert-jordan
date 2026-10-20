@@ -73,8 +73,13 @@ function normalizeScene(id, raw) {
   const quotes = (raw.quotes ?? []).map((q, index) => {
     const ctx = `scenes/${id}.json quote ${index + 1}`;
     if (!q.objectId) console.warn(`[${ctx}] has no objectId; it can never be revealed.`);
+    const menu = q.menu ?? 'full';
+    if (menu !== 'full' && menu !== 'single') console.warn(`[${ctx}] "menu" is "${q.menu}"; use "full" or "single". Using "full".`);
     return {
       key: `${id}#${index}`,
+      label: q.label == null ? null : String(q.label),
+      menu: menu === 'single' ? 'single' : 'full',
+      text: q.text ?? '',
       quote: q.quote ?? '',
       analysis: q.analysis ?? '',
       page: q.page ?? '',

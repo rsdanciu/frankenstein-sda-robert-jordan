@@ -233,7 +233,8 @@ if (typeof window !== 'undefined') window.NIHILISM = nihilism;
  *           target[key] = base × lightIntensity. `target` can be a THREE.Light or a
  *           shader uniform ({ value }), with key 'value'.
  *   fogs:   [{ fog: THREE.FogExp2, scale = 1, colorFrom = 'skyHorizon' }]
- *           fog.density = fogDensity × scale; fog.color follows `colorFrom`.
+ *           fog.density = fogDensity × scale; fog.color follows `colorFrom`
+ *           (colorFrom: null leaves the colour to the scene, e.g. a day/night sky).
  *   colors: [{ color: THREE.Color, from: 'skyTop' | 'skyHorizon' | 'space' }]
  *           Copies the mapped colour every frame (sky uniforms, backgrounds, …).
  */
@@ -302,7 +303,7 @@ export function applyNihilismVisuals(coefficient) {
     if (b.fogs) {
       for (const f of b.fogs) {
         f.fog.density = p.fogDensity * (f.scale ?? 1);
-        f.fog.color.copy(p[f.colorFrom ?? 'skyHorizon']);
+        if (f.colorFrom !== null) f.fog.color.copy(p[f.colorFrom ?? 'skyHorizon']);
       }
     }
     // 4. Sky colour (sky domes, backgrounds, atmosphere tint).

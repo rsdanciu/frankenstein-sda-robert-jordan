@@ -2,37 +2,48 @@
   "id": "ingolstadt",
   "quotes": [
     {
-      "quote": "[PLACEHOLDER]",
-      "analysis": "[PLACEHOLDER]",
+      "label": "Moon",
+      "quote": "The Monster awakens at first with an initial confusion in his surroundings, yet as he gains his bearings, he continually loves beauty in nature. The Monster’s love of nature highlights how he starts life with only admiration for the world. When he is still adjusting to vision the Monster views the “bright moon, and [he] fixes [is] eyes on [it] with pleasure” (Shelley 71).",
+      "analysis": "The affinity for the great beauties of nature highlight how the Monster uses nature as an anchor to steady himself in the world.",
       "page": "[PLACEHOLDER]",
       "isNietzsche": false,
-      "objectId": "ingolstadt-object-1",
+      "objectId": "ingolstadt-moon",
       "order": 1,
       "nihilism": { "truth": 0, "unity": 0, "purpose": 0 },
       "step": 1,
       "required": true
     },
     {
-      "quote": "[PLACEHOLDER]",
-      "analysis": "[PLACEHOLDER]",
+      "label": "Tree branch",
+      "quote": "As he gains more sense of the Earth, the Monster is “delighted when [he] first discovered that a pleasant sound” came from birds (Shelley 71).",
+      "analysis": "The fascination with nature demonstrates the Monster’s first sense of value comes from what is beautiful to him, not just what he needs to survive.",
       "page": "[PLACEHOLDER]",
       "isNietzsche": false,
-      "objectId": "ingolstadt-object-2",
+      "objectId": "ingolstadt-branch",
       "order": 2,
+      "nihilism": { "truth": 0, "unity": 0, "purpose": 0 },
+      "step": 2,
+      "required": true
+    },
+    {
+      "label": "Stream",
+      "menu": "single",
+      "text": "The Monster currently is not focused on survival. This moment does not impact his Nihilism Coefficient.",
+      "objectId": "ingolstadt-stream",
+      "order": 3,
       "nihilism": { "truth": 0, "unity": 0, "purpose": 0 },
       "step": 1,
       "required": false
     },
     {
-      "quote": "[PLACEHOLDER]",
-      "analysis": "[PLACEHOLDER]",
-      "page": "[PLACEHOLDER]",
-      "isNietzsche": false,
-      "objectId": "ingolstadt-object-3",
-      "order": 3,
+      "label": "Berry bush",
+      "menu": "single",
+      "text": "The berries meet the Monster’s need for food and sustenance but at this point, his primary focus is not survival. His purpose is beyond that. His Nihilism Coefficient remains unchanged.",
+      "objectId": "ingolstadt-berries",
+      "order": 4,
       "nihilism": { "truth": 0, "unity": 0, "purpose": 0 },
-      "step": 2,
-      "required": true
+      "step": 1,
+      "required": false
     }
   ]
 }

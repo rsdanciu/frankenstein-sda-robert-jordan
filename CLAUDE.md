@@ -42,8 +42,18 @@ turn drives the look of the world.
 | world.json | `ending.title` | The Monster’s Journey Has Ended |
 | world.json | `ending.text` | The Monster has reached psychological nihilism |
 | bibliography.json | `title`, `entries` | Works Cited, with the Nietzsche and Shelley entries exactly as supplied |
+| scenes/ingolstadt.json | `ingolstadt-moon` → `quote`, `analysis` | the students' moon quotation and analysis, exactly as supplied (Prompt 3) |
+| scenes/ingolstadt.json | `ingolstadt-branch` → `quote`, `analysis` | the students' birdsong quotation and analysis, exactly as supplied |
+| scenes/ingolstadt.json | `ingolstadt-stream` → `text` | "The Monster currently is not focused on survival. This moment does not impact his Nihilism Coefficient." |
+| scenes/ingolstadt.json | `ingolstadt-berries` → `text` | the students' berry-bush sentence, exactly as supplied |
+| scenes/ingolstadt.json | every `nihilism` delta | 0 (students: "0 for all components" / "remains unchanged") |
+| Ingolstadt scene | design | the whole scene brief (setting, trees, opening, palette, mist, stream, day/night, objects, labels) is the students' design; see section 5a |
 
-Still `[PLACEHOLDER]`: `nihilismExplanation.text` and every quote/analysis/page field.
+Still `[PLACEHOLDER]`: `nihilismExplanation.text`, the two Ingolstadt `page` fields, and every
+quote/analysis/page field in the other six scenes.
+
+The `label` values in ingolstadt.json ("Moon", "Tree branch", "Stream", "Berry bush") are short
+UI names taken from the students' own descriptions of the objects; they may be renamed freely.
 
 ---
 
@@ -94,6 +104,7 @@ src/
     tween.js                  promise-based tweens on the main loop clock
     events.js                 tiny event emitter
     dev.js                    ?dev=1 flag + dev panel
+    audio.js                  shared Web Audio output + remembered sound on/off
   nihilism/
     nihilism.js               ALL Nihilism Coefficient handling (state, deltas, visuals, validation)
   globe/
@@ -111,7 +122,19 @@ src/
     ComponentTracker.js       steps, required/optional, enable/disable, completion
     environment.js            sky dome
     registry.js               location id → scene class
-    locations/<id>.js         one dedicated scene module per location (currently extend PlaceholderScene)
+    locations/<id>.js         one dedicated scene module per location
+                              (ingolstadt.js is built; the other six still extend PlaceholderScene)
+    nature/                   reusable outdoor kit for dedicated scenes (no image or sound files):
+      sky.js                    DaySky: day/night gradient, sun, full moon, stars, clouds, lighting state
+      trees.js                  broadleaf + conifer generators, far silhouettes, foliage-card instancing
+      ground.js                 terrain mesh (grass/leaf-litter blend), grass, ferns, leaves, twigs, rocks
+      water.js                  Stream: centre line, distance queries, water shader (ripples, reflections)
+      mist.js                   camera-facing mist sheets
+      birds.js                  Bird: flight, landing, perching, singing beak
+      birdsong.js               synthesised birdsong phrases
+      wind.js                   wind sway for foliage/grass materials
+      textures.js               canvas-drawn leaves, needles, grass, ferns, bark, forest floor
+      random.js  glsl.js        seeded RNG + value noise (JS and GLSL)
   ui/
     StartMenu.js  HUD.js  QuoteModal.js  InfoModal.js  EndingMenu.js  WorldLabels.js  dom.js
   styles/main.css             glassmorphism tokens and all UI styles
@@ -195,9 +218,15 @@ Current ids, in order: `ingolstadt`, `ruralGermany`, `genevaMountains`, `scotlan
 | `nihilism` | **signed deltas**; missing keys = 0, so a quote may change only one component |
 | `step` | sequence group; step N unlocks once every *required* quote in earlier steps is viewed |
 | `required` | `true` = needed to complete the scene; `false` = optional |
+| `label` | *(optional)* short name shown on the object's label in dedicated scenes, the title of a one-page note, and the ending-chart tooltip |
+| `menu` | *(optional)* `"full"` (default: Quote → Analysis → Impact) or `"single"` (one page showing `text`) |
+| `text` | *(for `"menu": "single"`)* the note's only page |
 
-Each placeholder scene currently has three structural slots (step 1 required, step 1 optional,
-step 2 required) only to exercise the step/required logic. The number of quotes, steps, and
+A one-page note counts as viewed as soon as it opens; its `nihilism` delta (0 in Ingolstadt) is
+applied then, since it has no Impact page. `quote` / `analysis` / `page` are not used for notes.
+
+Each placeholder scene (all except Ingolstadt) currently has three structural slots (step 1
+required, step 1 optional, step 2 required) only to exercise the step/required logic. The number of quotes, steps, and
 which are required are the students' decisions.
 
 ### `public/json/bibliography.json`
@@ -240,6 +269,12 @@ Everything coefficient-related is in this single file, with the mapping document
   Each is `{ atZero, atOne }`, linearly interpolated (optional `curve`). Views hand over their
   Three.js objects with `bindNihilismTargets({ lights, fogs, colors })`; scenes do it through
   `BaseScene.bindNihilism()` so bindings are removed on dispose.
+- **Day/night scenes** (Ingolstadt): lights stay bound, but the scene updates each binding's `base`
+  every frame from the time of day, so the coefficient still scales them. Fog density stays bound;
+  its colour is set by the sky (`colorFrom: null`). The daytime sky colours are read live from
+  `visualParams.skyTop / skyHorizon`, so the coefficient keeps colouring the day sky; night and
+  twilight colours are the scene's own (`SKY_PALETTE` in `nature/sky.js`). Saturation and vignette
+  (grade pass) apply everywhere as before.
 
 ---
 
@@ -249,10 +284,13 @@ Everything coefficient-related is in this single file, with the mapping document
   currently extend `PlaceholderScene`.
 - `BaseScene` build order: `buildEnvironment` → `buildBackground` → `buildForeground` → Monster is
   created → `placeMonster` → `buildInteractables`. Hooks: `onUpdate`, `onHover`, `onQuoteOpened`,
-  `onQuoteViewed`, `onStepChange`, `onComplete`, `onDispose`, `styleInteractable`.
-  `static cameraHome = { position, target }` sets the landing framing.
+  `onQuoteViewed`, `onQuoteClosed`, `onStepChange`, `onComplete`, `onDispose`, `styleInteractable`.
+  `static cameraHome = { position, target }` sets the landing framing; `fitHome(aspect)`,
+  `entryPosition(home)` and `exitPosition(from)` can be overridden for portrait framing and for
+  where the zoom-in starts / zoom-out ends.
 - Every quote `objectId` must be registered with `this.registerInteractable(objectId, object3D)`;
-  a missing one is warned about in the console.
+  a missing one is warned about in the console. A registered object with `visible = false` cannot
+  be clicked. `object.userData.lookPoint` tells the Monster where to look when it is hovered.
 - `ComponentTracker` (`this.tracker`):
   - current step = lowest step with an unviewed required quote; components with `step ≤ current`
     are active; later ones are locked (click → "This unlocks at step N.");
@@ -264,6 +302,38 @@ Everything coefficient-related is in this single file, with the mapping document
   world changes while the impact is on screen. A quote counts as viewed only once it reaches page 3.
   Re-opening shows the original impact without re-applying it.
 - On completion the HUD shows **Proceed**; clicking it returns to the globe and unlocks the next location.
+- **Labels in dedicated scenes** (`.poi` in main.css): a clickable, keyboard-focusable button per
+  component, hidden while it is locked or while the scene is not interactive. Required: glass chip,
+  gold dot with a pulsing ring until viewed. Optional: smaller, dimmer, no chip or ring (quieter, as
+  the students asked); full strength on hover/focus. Viewed: blue dot.
+
+### 5a. Ingolstadt (`src/scenes/locations/ingolstadt.js`)
+
+Implemented from the students' brief (Prompt 3); the design is theirs. Tunable constants at the
+top of the file: `TIME`, `SKY`, `LAYOUT`. Everything is procedural and seeded, so it is the same on
+every visit.
+
+- **Set:** forest clearing, only the Monster in it, seated beneath a large tree (`setPose('sit')`).
+  Near ring of detailed trees (bark, limbs, leaf/needle cards that sway), a middle ring with less
+  detail, and a far ring of dark instanced silhouettes (mostly spruce under the moon so the skyline
+  there is pointed). Gaps between all rings; fog and mist sheets layer the depth.
+- **Opening:** trees, limbs and foliage are kept out of a 10° cone from the camera toward the moon
+  (`SKY.openingDeg`), and one tree's long limb arches over the top of it. A second, narrower gap
+  (`SKY.sunGapDeg`) lets the low morning sun reach the branch and clearing.
+- **Stream:** `LAYOUT.stream` centre line from behind the camera into the distance, carved into the
+  ground, with stones on both banks and a few in the water; water shows slow ripples, ripple rings,
+  and sun/moon reflections.
+- **Time of day** (`TIME`): phases `night` (held, moon in the opening; clouds, leaves, water, stars
+  move) → `passing` (after the moon's menu closes: `passingDays` days in `passingSeconds`) →
+  `morning` (held soft morning light; robins fly in and land) → `free` (once complete, the cycle runs
+  continuously, one day per `freeDaySeconds`; birds leave at dusk and return at dawn, the moon is
+  clickable whenever it is up). Reduced-motion: one day passes over 6 s.
+- **Components:** `ingolstadt-moon` (required, step 1), `ingolstadt-branch` (required, step 2; enabled
+  only once the birds have landed, via `tracker.setEnabled`), `ingolstadt-stream` and
+  `ingolstadt-berries` (optional one-page notes). Opening the branch makes a bird sing and the
+  Monster reach toward the branch. The objectIds are fixed in the scene code.
+- **Sound:** synthesised birdsong while the birds are perched in daylight (stereo-panned by screen
+  position); toggled with the HUD speaker button.
 
 ### Recipe: building a dedicated scene
 
@@ -322,7 +392,9 @@ Everything coefficient-related is in this single file, with the mapping document
 One procedural figure (Three.js primitives in a joint hierarchy) used in every scene so he is always
 the same silhouette. `MONSTER_STYLE` (height and colours) changes him everywhere at once. Animations
 are procedural: idle (breathing, sway, glances), walk (heavy gait, blended), head `lookAt`,
-`turnTowards`, `walkTo(point, speed)`. All joints are exposed via `monster.joints` for custom poses.
+`turnTowards`, `walkTo(point, speed)`, `setPose('sit' | 'stand')` (sitting on the ground, back
+leaning, one knee raised; `SIT_POSE`), and `reachTowards(point | null, 'L' | 'R')` (aims one arm at a
+point). All joints are exposed via `monster.joints` for custom poses.
 The current look is a neutral starting point for the students to adjust.
 
 ---
@@ -339,6 +411,9 @@ The current look is a neutral starting point for the students to adjust.
   the glass surface. Changes are shown in ink (solid = gain, dashed = loss), never red/green, so the
   UI implies no value judgement.
 - Responsive down to phone width; `prefers-reduced-motion` respected.
+- **Sound toggle:** round glass speaker button bottom-right (shown with the HUD meter). Sound is on by
+  default; the choice is remembered in this browser (`localStorage`, with a safe fallback). All sound
+  is synthesised with Web Audio (`src/core/audio.js`); there are no audio files.
 
 ---
 
@@ -390,6 +465,19 @@ The current look is a neutral starting point for the students to adjust.
 | Explanation popup is a generic `InfoModal` fed from JSON | The text stays editable without touching code, and the same popup can show other long text later. |
 | Popup has a large minimum height (≤ 62% of the screen) | Reads as a "large popup" even before the explanation is written; long text scrolls inside it. |
 | Bibliography heading read from JSON; optional `*italics*` | The students control the heading and any formatting; entries are shown exactly as written. |
+| Reusable `scenes/nature/` kit | Sky, trees, water, birds and ground are generic, so later outdoor scenes can reuse them instead of starting again. |
+| Everything procedural and seeded (canvas textures, synthesised sound) | No asset files to license or host on Pages; the composition (moon opening) is identical on every visit. |
+| Real sun/moon hour-angle maths, sky turned to fit the shot (`aimMoon`) | Day and night pass in a believable order and direction, while the moon still lands in the planned opening. |
+| Day/night held at night, then at morning, until each interaction is done; continuous afterwards | Satisfies both parts of the brief: the moon must be up for the moon interaction and morning light for the birdsong, and the scene still runs through every time of day. |
+| Trees placed around clear cones (moon opening, sun gap, camera path) | The opening and the morning light are guaranteed by construction, not by hand-placing every tree. |
+| Night lighting: moonlight + cool hemisphere + soft camera-side fill | Keeps the Monster, foliage and ground texture readable at night, as the brief asks. |
+| Water reflections use a real mirror term plus a stylised glitter path toward the sun/moon | A thin stream seen at a low angle would rarely show a true mirror image of either; the glitter path reads as their reflection. |
+| Branch enabled only after the birds land | The birdsong interaction cannot start before there are birds on the branch. |
+| Optional labels quieter than required ones | The students asked for optional objects to be visually quieter and slightly harder to find. |
+| Labels are real buttons | Keyboard access and a bigger click target than the 3D object alone. |
+| Birdsong synthesised, with a mute button | The interaction is about birdsong; sound needs an off switch for classrooms. |
+| One-page notes (`"menu": "single"`) as a JSON option | The students asked for a one-step menu for the stream and berries; keeping it in JSON lets them use it elsewhere. |
+| Trunk/limb tubes wound counter-clockwise | Fixed during Prompt 3: the first version rendered inside-out (back faces showing). |
 
 ---
 
@@ -406,6 +494,17 @@ These are **theirs** to make. Claude must not choose them.
 - All remaining content: the Nihilism Coefficient explanation, quotes, analysis, pages,
   `isNietzsche`, quote counts/steps/required flags, deltas, start and end values.
 - The Monster's look (`MONSTER_STYLE`) and each scene's design.
+- **Ingolstadt, raised in Prompt 3 (awaiting the students' answer):**
+  - *Page fields* are still `[PLACEHOLDER]` (the quotes already end with "(Shelley 71)"). Fill
+    `page`, or ask for the "p." line to be hidden when empty.
+  - *Berry bush:* the brief says "Object 4: Required: Another optional object". It is built as
+    **optional** (matching "optional", the one-step menu and "the optional objects"). Set
+    `"required": true` if it should be required.
+  - *"The Nihilism Coefficient for this scene is 0, it will remain unchanged":* read as a change of 0.
+    The end value equals the start value (both still the 0.5 placeholder). If the coefficient itself
+    should be 0, set `start` and the Ingolstadt end value in world.json.
+  - The night/morning holds and the continuous cycle afterwards (see section 5a) are an
+    interpretation of "continuous day and night" plus the two interaction states; `TIME` changes it.
 
 ---
 

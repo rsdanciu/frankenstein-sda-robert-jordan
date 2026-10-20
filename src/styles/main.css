@@ -499,6 +499,48 @@ body {
   transform: translate(-50%, 0);
 }
 
+/* Sound on/off */
+.hud-sound {
+  position: absolute;
+  right: var(--gutter);
+  bottom: calc(var(--gutter) + env(safe-area-inset-bottom));
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  color: var(--text-2);
+  opacity: 0;
+  transition: opacity 0.38s var(--ease);
+}
+
+.hud-sound:hover {
+  color: var(--text);
+}
+
+.hud-sound svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hud-sound .sound-off,
+.hud-sound[aria-pressed='false'] .sound-waves {
+  display: none;
+}
+
+.hud-sound[aria-pressed='false'] .sound-off {
+  display: inline;
+}
+
+.hud-sound:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
 /* ---------- Labels pinned to 3D points ---------- */
 .world-labels {
   position: absolute;
@@ -631,6 +673,115 @@ body {
 
 .scene-label-meta {
   color: var(--text-muted);
+}
+
+/* Points of interest in dedicated scenes. Required: a glass chip with a gold dot that
+   pulses until viewed. Optional: deliberately quieter (small, dim, no chip) until hovered. */
+.poi {
+  appearance: none;
+  pointer-events: auto;
+  translate: -50% -50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px 5px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: rgba(12, 16, 26, 0.5);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--text);
+  font: 500 12.5px/1 var(--font-ui);
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition:
+    opacity 0.45s var(--ease),
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.poi-dot {
+  position: relative;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px rgba(255, 200, 97, 0.75);
+}
+
+.poi.is-required.is-pending .poi-dot::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 200, 97, 0.7);
+  animation: poi-ring 2.2s ease-out infinite;
+}
+
+@keyframes poi-ring {
+  from {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+.poi.is-viewed .poi-dot {
+  background: var(--viewed);
+  box-shadow: none;
+}
+
+.poi:hover,
+.poi.is-hovered {
+  background: rgba(30, 36, 52, 0.78);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.poi.is-optional {
+  gap: 5px;
+  padding: 3px 8px 3px 5px;
+  border-color: transparent;
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  opacity: 0.55;
+}
+
+.poi.is-optional .poi-dot {
+  width: 6px;
+  height: 6px;
+  background: rgba(240, 239, 236, 0.75);
+  box-shadow: none;
+}
+
+.poi.is-optional.is-viewed .poi-dot {
+  background: rgba(143, 208, 255, 0.75);
+}
+
+.poi.is-optional:hover,
+.poi.is-optional.is-hovered,
+.poi.is-optional:focus-visible {
+  opacity: 1;
+  color: var(--text);
+  border-color: var(--hairline);
+  background: rgba(12, 16, 26, 0.55);
+}
+
+.poi:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.poi.is-hidden {
+  opacity: 0 !important;
+  pointer-events: none;
 }
 
 /* ---------- Quote menu ---------- */
@@ -821,6 +972,19 @@ body {
 .analysis-text {
   margin: 0;
   font-size: 16px;
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre-line;
+}
+
+/* One-page notes ("menu": "single") */
+.note {
+  margin-top: 16px;
+}
+
+.note-text {
+  margin: 0;
+  font-size: 17px;
   line-height: 1.7;
   color: var(--text);
   white-space: pre-line;
@@ -1266,6 +1430,15 @@ body {
   .scene-label {
     padding: 3px 6px;
     font-size: 9.5px;
+  }
+
+  .poi {
+    padding: 4px 9px 4px 6px;
+    font-size: 11.5px;
+  }
+
+  .poi.is-optional {
+    font-size: 10.5px;
   }
 
   .modal-hint {

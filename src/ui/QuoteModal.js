@@ -9,6 +9,10 @@ import { COMPONENT_NAMES } from './HUD.js';
 //   3. Impact on the Nihilism Coefficient — the quote's delta is applied when this
 //      page is first reached, so the world shifts while the numbers are on screen.
 // Escape (or ×) closes early; a quote closed before page 3 does not count as viewed.
+//
+// Entries with "menu": "single" are one-page notes instead: the entry's `label` is the
+// title and its `text` the only page. A note counts as viewed (and applies its delta,
+// if any) as soon as it opens.
 
 const PAGES = ['Quote', 'Analysis', 'Impact'];
 
@@ -27,13 +31,15 @@ export class QuoteModal {
     this.dots = PAGES.map((name, i) =>
       el('li', { className: 'modal-dot' }, [el('span', { className: 'modal-dot-num', text: i + 1 }), el('span', { className: 'modal-dot-label', text: name })]),
     );
+    this.steps = el('ol', { className: 'modal-steps' }, this.dots);
     this.body = el('div', { className: 'modal-body', attrs: { 'aria-live': 'polite' } });
+    this.hint = el('span', { className: 'modal-hint' });
     this.nextBtn = el('button', { className: 'btn btn-primary', attrs: { type: 'button' }, on: { click: () => this.next() } });
     this.panel = el('section', { className: 'modal glass', attrs: { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'modal-title' } }, [
       el('header', { className: 'modal-header' }, [el('div', {}, [this.kicker, this.title]), this.closeBtn]),
-      el('ol', { className: 'modal-steps' }, this.dots),
+      this.steps,
       this.body,
-      el('footer', { className: 'modal-footer' }, [el('span', { className: 'modal-hint', text: 'Press Enter ↵ to continue' }), this.nextBtn]),
+      el('footer', { className: 'modal-footer' }, [this.hint, this.nextBtn]),
     ]);
     this.node = el('div', { className: 'modal-backdrop', attrs: { hidden: '' } }, this.panel);
     root.append(this.node);
@@ -49,9 +55,12 @@ export class QuoteModal {
   /** Resolves when the menu closes: { viewed } tells whether the impact page was reached. */
   open({ quote, location, index, total, resolveImpact }) {
     return new Promise((resolve) => {
-      this.session = { quote, resolveImpact, resolve, page: 0, impact: null };
+      const single = quote.menu === 'single';
+      this.session = { quote, resolveImpact, resolve, page: 0, impact: null, single, pages: single ? [quote.label ?? 'Note'] : PAGES };
+      if (single) this.session.impact = resolveImpact();
       this.kicker.textContent = `${location.name} · ${index + 1} / ${total}`;
       this.panel.classList.toggle('is-nietzsche', quote.isNietzsche);
+      this.steps.hidden = single;
       this.#render();
       document.body.classList.add('modal-open');
       reveal(this.node).then(() => this.nextBtn.focus({ preventScroll: true }));
@@ -61,9 +70,9 @@ export class QuoteModal {
   next() {
     const s = this.session;
     if (!s) return;
-    if (s.page < PAGES.length - 1) {
+    if (s.page < s.pages.length - 1) {
       s.page++;
-      if (s.page === PAGES.length - 1 && !s.impact) s.impact = s.resolveImpact();
+      if (s.page === s.pages.length - 1 && !s.impact) s.impact = s.resolveImpact();
       this.#render();
     } else {
       this.close();
@@ -91,13 +100,14 @@ export class QuoteModal {
 
   #render() {
     const s = this.session;
-    this.title.textContent = PAGES[s.page];
+    this.title.textContent = s.pages[s.page];
     this.dots.forEach((d, i) => {
       d.classList.toggle('is-active', i === s.page);
       d.classList.toggle('is-done', i < s.page);
     });
-    this.nextBtn.textContent = s.page < PAGES.length - 1 ? 'Next' : 'Continue';
-    const page = [() => quotePage(s.quote), () => analysisPage(s.quote), () => impactPage(s.impact)][s.page]();
+    this.nextBtn.textContent = s.single ? 'Close' : s.page < PAGES.length - 1 ? 'Next' : 'Continue';
+    this.hint.textContent = s.single ? 'Press Enter ↵ to close' : 'Press Enter ↵ to continue';
+    const page = s.single ? notePage(s.quote) : [() => quotePage(s.quote), () => analysisPage(s.quote), () => impactPage(s.impact)][s.page]();
     page.classList.add('modal-page');
     this.body.replaceChildren(page);
   }
@@ -109,6 +119,10 @@ function quotePage(q) {
     el('blockquote', { className: 'quote-text', text: q.quote }),
     el('figcaption', { className: 'quote-cite', text: `p. ${q.page}` }),
   ]);
+}
+
+function notePage(q) {
+  return el('div', { className: 'note' }, el('p', { className: 'note-text', text: q.text }));
 }
 
 function analysisPage(q) {

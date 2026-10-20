@@ -8,7 +8,9 @@ import * as THREE from 'three';
  * Built from Three.js primitives in a joint hierarchy (no external model), animated
  * procedurally:
  *   setAnimation('idle' | 'walk')  – blends smoothly between the two
+ *   setPose('stand' | 'sit')       – sits on the ground (back leaning, one knee up)
  *   lookAt(point | null)           – head tracks a world point (null = idle glances)
+ *   reachTowards(point | null, side) – lifts the 'L' or 'R' arm towards a world point
  *   turnTowards(point)             – body turns to face a point
  *   walkTo(point, speed)           – walks there, resolves on arrival
  *   joints                         – every joint Group, for custom scene poses
@@ -36,6 +38,25 @@ export const MONSTER_STYLE = {
 const BUILT_HEIGHT = 2.45; // the proportions below are authored for this height
 const HIP_Y = 1.17;
 
+// Sitting on the ground: pelvis down, back leaning, left knee raised with the forearm
+// resting on it, right leg stretched out and the right hand on the ground.
+const SIT_POSE = {
+  hipsY: 0.22,
+  joints: {
+    legL: [-2.2, 0, 0.16],
+    kneeL: [1.78, 0, 0],
+    legR: [-1.5, 0, -0.14],
+    kneeR: [0.05, 0, 0],
+    spine: [-0.16, 0, 0],
+    chest: [0.1, 0, 0],
+    shoulderL: [-0.9, 0, -0.18],
+    elbowL: [-0.95, 0, 0],
+    shoulderR: [-0.22, 0, -0.22],
+    elbowR: [-0.15, 0, 0],
+  },
+  skirt: { rotationX: -0.2, scaleY: 0.45, scaleXZ: 1.22 },
+};
+
 export class Monster {
   constructor(style = MONSTER_STYLE) {
     this.style = style;
@@ -55,10 +76,25 @@ export class Monster {
     this.headPitch = 0;
     this.facing = null; // target yaw for the whole body
     this.move = null; // { target, speed, resolve }
+    this.sitWeight = 0;
+    this.sitTarget = 0;
+    this.reach = { point: null, side: 'L', weight: 0 };
   }
 
   setAnimation(name) {
     this.walkTarget = name === 'walk' ? 1 : 0;
+  }
+
+  /** 'sit' | 'stand'. `immediate` skips the blend (e.g. when a scene starts with him seated). */
+  setPose(name, { immediate = false } = {}) {
+    this.sitTarget = name === 'sit' ? 1 : 0;
+    if (immediate) this.sitWeight = this.sitTarget;
+  }
+
+  reachTowards(point, side = 'L') {
+    if (point) this.reach.point = point.clone();
+    this.reach.side = point ? side : this.reach.side;
+    this.reach.active = Boolean(point);
   }
 
   lookAt(point) {
@@ -118,8 +154,44 @@ export class Monster {
     // Coat tails trail and swing.
     this.parts.skirt.rotation.x = -0.06 * w - 0.03 * w * Math.abs(s);
     this.parts.skirt.rotation.z = -0.04 * w * s;
+    this.parts.skirt.scale.set(1, 1, 1);
 
+    this.sitWeight = damp(this.sitWeight, this.sitTarget, 2.2, dt);
+    if (this.sitWeight > 1e-3) this.#applySit(this.sitWeight, breath);
+
+    this.object.updateMatrixWorld(true);
+    this.#updateReach(dt);
     this.#updateHead(dt);
+  }
+
+  #applySit(k, breath) {
+    const J = this.joints;
+    J.hips.position.y += (SIT_POSE.hipsY + breath * 0.004 - J.hips.position.y) * k;
+    J.hips.rotation.y *= 1 - k;
+    J.hips.rotation.z *= 1 - k;
+    for (const [name, [x, y, z]] of Object.entries(SIT_POSE.joints)) {
+      const r = J[name].rotation;
+      r.set(r.x + (x - r.x) * k, r.y + (y - r.y) * k, r.z + (z - r.z) * k);
+    }
+    const { skirt } = this.parts;
+    const S = SIT_POSE.skirt;
+    skirt.rotation.x += (S.rotationX - skirt.rotation.x) * k;
+    const xz = 1 + (S.scaleXZ - 1) * k;
+    skirt.scale.set(xz, 1 + (S.scaleY - 1) * k, xz);
+  }
+
+  /** Points the chosen arm at reach.point (shoulder aimed, elbow nearly straight), blended by its weight. */
+  #updateReach(dt) {
+    const R = this.reach;
+    R.weight = damp(R.weight, R.active ? 1 : 0, 2.6, dt);
+    if (R.weight < 1e-3 || !R.point) return;
+    const shoulder = this.joints[`shoulder${R.side}`];
+    const elbow = this.joints[`elbow${R.side}`];
+    const dir = _v.copy(R.point).sub(shoulder.getWorldPosition(_w)).normalize();
+    dir.applyQuaternion(shoulder.parent.getWorldQuaternion(_q).invert());
+    _q.setFromUnitVectors(DOWN, dir);
+    shoulder.quaternion.slerp(_q, R.weight);
+    elbow.rotation.x += (-0.18 - elbow.rotation.x) * R.weight;
   }
 
   #updateMovement(dt) {
@@ -282,6 +354,9 @@ export class Monster {
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 const _v = new THREE.Vector3();
+const _w = new THREE.Vector3();
+const _q = new THREE.Quaternion();
+const DOWN = new THREE.Vector3(0, -1, 0);
 
 function damp(current, target, rate, dt) {
   return current + (target - current) * (1 - Math.exp(-rate * dt));

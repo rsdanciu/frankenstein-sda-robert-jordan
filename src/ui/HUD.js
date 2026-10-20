@@ -1,8 +1,10 @@
 import { el, reveal, conceal, fmt2 } from './dom.js';
 import { nihilism, COMPONENTS } from '../nihilism/nihilism.js';
+import { sound } from '../core/audio.js';
 
 // Heads-up display: where you are (top-left), the live Nihilism Coefficient
-// (top-right), hints and the Proceed button (bottom), and short toasts.
+// (top-right), hints and the Proceed button (bottom), a sound on/off toggle
+// (bottom-right), and short toasts.
 
 export const COMPONENT_NAMES = { truth: 'Truth', unity: 'Unity', purpose: 'Purpose' };
 
@@ -19,12 +21,23 @@ export class HUD {
       on: { click: () => onProceed() },
     });
     this.toastEl = el('div', { className: 'toast glass-chip', attrs: { hidden: '', role: 'status' } });
-    root.append(this.info, this.meter.node, this.hint, this.proceed, this.toastEl);
+    this.soundBtn = el('button', {
+      className: 'icon-btn hud-sound glass-chip',
+      attrs: { type: 'button', hidden: '', 'aria-label': 'Sound' },
+      on: { click: () => sound.toggle() },
+    }, soundIcon());
+    const syncSound = (on) => {
+      this.soundBtn.setAttribute('aria-pressed', String(on));
+      this.soundBtn.title = on ? 'Sound on' : 'Sound off';
+    };
+    syncSound(sound.enabled);
+    sound.onChange(syncSound);
+    root.append(this.info, this.meter.node, this.hint, this.proceed, this.toastEl, this.soundBtn);
     this.lastKey = '';
   }
 
   setMeterVisible(visible) {
-    visible ? reveal(this.meter.node) : conceal(this.meter.node);
+    for (const node of [this.meter.node, this.soundBtn]) visible ? reveal(node) : conceal(node);
   }
 
   /** Per frame: follows the smoothed coefficient, touching the DOM only when it moves. */
@@ -108,6 +121,25 @@ export class HUD {
     clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => conceal(this.toastEl), 2400);
   }
+}
+
+/** Speaker icon; CSS shows the waves or the cross depending on aria-pressed. */
+function soundIcon() {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  for (const [d, cls] of [
+    ['M4 9.5h3.5L12 6v12l-4.5-3.5H4z', 'sound-speaker'],
+    ['M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11', 'sound-waves'],
+    ['M16 9.5l5 5M21 9.5l-5 5', 'sound-off'],
+  ]) {
+    const p = document.createElementNS(NS, 'path');
+    p.setAttribute('d', d);
+    p.setAttribute('class', cls);
+    svg.append(p);
+  }
+  return svg;
 }
 
 function buildMeter() {

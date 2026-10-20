@@ -28,11 +28,18 @@ import { nihilism, bindNihilismTargets, checkSceneEnd } from '../nihilism/nihili
  *     onHover(objectId | null)    pointer over a component
  *     onQuoteOpened(quote)        a quote menu opened
  *     onQuoteViewed(quote, impact) first time a quote reaches its impact page
+ *     onQuoteClosed(quote, { viewed }) the menu closed again
  *     onStepChange(step)          the current step advanced
  *     onComplete()                every required component viewed
  *     styleInteractable(object, state, t)  per-frame look of each component
  *
- * Step gating and manual enabling live in this.tracker (ComponentTracker).
+ *   CAMERA
+ *     fitHome(aspect)       adjusts the landing framing for narrow (portrait) screens
+ *     entryPosition(home)   where the zoom-in starts (default: high above and behind)
+ *     exitPosition(from)    where the zoom-out ends
+ *
+ * Step gating and manual enabling live in this.tracker (ComponentTracker). A registered
+ * object whose `visible` is false cannot be clicked (e.g. a moon below the horizon).
  */
 export class BaseScene {
   /** Camera framing when the zoom-in lands. Override per scene. */
@@ -152,6 +159,7 @@ export class BaseScene {
   onHover(objectId) {}
   onQuoteOpened(quote) {}
   onQuoteViewed(quote, impact) {}
+  onQuoteClosed(quote, result) {}
   onStepChange(step) {}
   onComplete() {}
   onDispose() {}
@@ -167,8 +175,7 @@ export class BaseScene {
   // ─── Camera choreography (the zoom-in / zoom-out halves of a transition) ─────
 
   /** Widens the view and pulls the home framing back on narrow (portrait) screens so components stay in view. */
-  #fitHome() {
-    const aspect = this.camera.aspect;
+  fitHome(aspect) {
     if (aspect >= 1.2) return;
     this.camera.fov = aspect < 0.8 ? 60 : 54;
     this.camera.updateProjectionMatrix();
@@ -177,10 +184,17 @@ export class BaseScene {
     this.controls.maxDistance = Math.max(this.controls.maxDistance, this.home.position.distanceTo(this.home.target) * 1.3);
   }
 
+  entryPosition(home) {
+    return new THREE.Vector3(home.x * 0.4, home.y + 38, home.z + 26);
+  }
+
+  exitPosition(from) {
+    return new THREE.Vector3(from.x * 0.4, from.y + 40, from.z + 22);
+  }
+
   placeCameraForEntry() {
-    this.#fitHome();
-    const h = this.home.position;
-    this.camera.position.set(h.x * 0.4, h.y + 38, h.z + 26);
+    this.fitHome(this.camera.aspect);
+    this.camera.position.copy(this.entryPosition(this.home.position));
     this.camera.lookAt(this.home.target);
   }
 
@@ -202,7 +216,7 @@ export class BaseScene {
     this.setInteractive(false);
     const from = this.camera.position.clone();
     const target = this.controls.target.clone();
-    const to = new THREE.Vector3(from.x * 0.4, from.y + 40, from.z + 22);
+    const to = this.exitPosition(from);
     await tween({
       duration,
       ease: Ease.inCubic,
@@ -224,11 +238,13 @@ export class BaseScene {
   get pickTarget() {
     return {
       camera: this.camera,
-      objects: () => [...this.interactables.values()],
+      objects: () => [...this.interactables.values()].filter((o) => o.visible),
       onHover: (id) => {
         this.hovered = id;
         this.onHover(id);
-        this.monster?.lookAt(id ? this.interactables.get(id).getWorldPosition(new THREE.Vector3()) : null);
+        const object = id ? this.interactables.get(id) : null;
+        // userData.lookPoint lets a large or far object (a stream, the moon) say where the Monster should look.
+        this.monster?.lookAt(object ? object.userData.lookPoint ?? object.getWorldPosition(new THREE.Vector3()) : null);
         return id && this.tracker.objectState(id).active ? 'pointer' : 'not-allowed';
       },
       onClick: (hit) => this.openComponent(hit.id),
@@ -248,7 +264,7 @@ export class BaseScene {
 
     this.setInteractive(false);
     this.onQuoteOpened(quote);
-    await this.services.quoteModal.open({
+    const result = await this.services.quoteModal.open({
       quote,
       location: this.location,
       index: this.data.quotes.indexOf(quote),
@@ -258,6 +274,7 @@ export class BaseScene {
     if (this.disposed) return;
     if (!this.completed && this.tracker.isComplete) this.complete();
     else this.setInteractive(true);
+    this.onQuoteClosed(quote, result);
   }
 
   /** Runs when the impact page is reached. Applies the delta only the first time. */
@@ -276,7 +293,7 @@ export class BaseScene {
     const impact = nihilism.applyDelta(quote.nihilism, {
       kind: 'quote',
       sceneId: this.location.id,
-      label: `${this.location.name} · ${quote.objectId}`,
+      label: `${this.location.name} · ${quote.label ?? quote.objectId}`,
     });
     this.impacts.set(quote.key, impact);
     this.tracker.markViewed(quote);
