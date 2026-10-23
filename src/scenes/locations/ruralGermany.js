@@ -274,7 +274,7 @@ export default class RuralGermanyScene extends BaseScene {
     this.step = 0; // index in ORDER of the next action to play
     this.disposables = [];
     this.rng = new Rng(2024);
-    this.talk = { speaker: -1, audience: 0, timer: 1.2 };
+    this.talk = { speaker: 0, audience: 1, timer: 1.2 };
     this.cloudOffset = new THREE.Vector2(1.3, 4.1);
     // The room keeps the saturation it had when the scene began (see grading.js).
     this.keepSaturation = visualScalarsAt(averageOf(this.start)).saturation;
@@ -1582,6 +1582,8 @@ diffuseColor.rgb *= lichenTex.rgb;`,
     this.scene.fog.color.copy(S.fogColor);
     const L = visualParams.lightIntensity;
     const truth = nihilism.displayed.truth;
+    const NL = this.nearLight;
+    NL.at += (NL.target - NL.at) * (1 - Math.exp(-dt * 1.5));
 
     // Light around the Monster fades with Truth (the drain below does the rest).
     for (const name of ['fill', 'near']) {
@@ -1589,8 +1591,6 @@ diffuseColor.rgb *= lichenTex.rgb;`,
       b.base = LIGHT[name] * (1 - 0.35 * truth) * (name === 'near' ? 1 - 0.7 * NL.at : 1);
       b.target.intensity = b.base * L;
     }
-    const NL = this.nearLight;
-    NL.at += (NL.target - NL.at) * (1 - Math.exp(-dt * 1.5));
     this.lights.near.position.lerpVectors(NEAR_LIGHT.high, NEAR_LIGHT.water, NL.at);
     DRAIN.uDrain.value = truth;
     DRAIN.uDrainCenter.value.copy(this.monster.object.position);

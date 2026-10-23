@@ -531,3 +531,64 @@ Of course, Robert. This is the same Geneva (Mountains) brief I finished last tur
 
 If you resent this brief because something looks wrong in the scene, tell me what and I'll change it. Nothing is committed, and this exchange is in chatlogs.md.
 
+---
+
+## Entry 10
+
+### Prompt (received 2026-10-23, about 09:12 −05:00)
+
+The goal of this prompt is to complete the live hosting framework through Github Pages. Can you ensure all the code is ready for this and then give me a step by step process of how to enable the hosting.
+
+### Response (sent 2026-10-23 09:30 −05:00)
+
+Of course, Robert. The code is ready for GitHub Pages. I rebuilt it the way GitHub's build server will and tested the result, and found and fixed two bugs on the way.
+
+**What I checked**
+- **Site path:** the site will live at `https://rsdanciu.github.io/frankenstein-sda-robert-jordan/`. The Vite `base` setting matches that, and every data file is loaded relative to it. When I served the build at that path, every file loaded (all 200s, no 404s).
+- **File-name case:** GitHub's build server runs Linux, where `Scotland.json` and `scotland.json` are different files; Windows treats them as the same. All 144 imports and all 7 scene files match their exact case.
+- **Clean install:** I ran `npm ci` from the lockfile on a fresh copy of the project, as GitHub will. It installs and builds without errors, and the lockfile includes the Linux build tools the server needs.
+- **Every scene in the built site:** the start menu and globe, Ingolstadt, Rural Germany, Geneva (Mountains), Scotland, and one placeholder scene all load with no console errors.
+
+**What I fixed**
+- **Rural Germany crashed every frame.** A value was used one line before it was declared. The scene looked fine, but the rest of each frame's update (including the puddle reflection) was skipped.
+- **Rural Germany had a startup error.** The family's conversation started with no speaker, which threw errors for the first second.
+- I then ran a one-off code check over all the source, without adding anything to the project. It found no more errors of these kinds.
+- **The deploy workflow:**
+  - It now runs automatically on every push to `main`, and you can still run it by hand.
+  - It uses the current action versions; the old ones ran on GitHub's retired Node 20 runtime.
+  - It now fails at the start with a clear message if Pages isn't enabled.
+  - A newer push no longer cancels a deploy that's halfway through.
+- CLAUDE.md §11 and §12 are updated.
+
+**One thing to know first:** your repository is **private**. GitHub only hosts Pages from a private repo on a paid plan. Either way, the website itself will be public.
+
+**Step by step (signed in to GitHub as `rsdanciu`, the repo owner)**
+
+1. **Allow Pages for the repo.** Pick one:
+   - **A. Free GitHub Pro (students):** apply for the Student Developer Pack at education.github.com/pack. Once it's approved (this can take a few days), your account gets Pro and the repo can stay private.
+   - **B. Make the repo public:** go to the repo's **Settings → General**, scroll to **Danger Zone**, click **Change repository visibility**, then **Public**. Everything in it becomes readable, including `chatlogs.md` and `CLAUDE.md`.
+2. **Turn on Pages:** go to **Settings → Pages**. Under **Build and deployment → Source**, choose **GitHub Actions**, not "Deploy from a branch". Nothing else needs setting there.
+3. **Check Actions are allowed:** go to **Settings → Actions → General**. It should be set to allow actions; the default "Allow all actions and reusable workflows" is fine.
+4. **Push today's changes.** The fixes and the new workflow are on your machine but not committed. From the project folder:
+   ```
+   git add .github/workflows/deploy.yml CLAUDE.md chatlogs.md src/scenes/locations/ruralGermany.js
+   git commit -m "Prepare GitHub Pages deployment"
+   git push
+   ```
+   The push starts the first deploy by itself. I can run these commands for you if you'd like.
+5. **Watch it run:** open the **Actions** tab and click the **Deploy to GitHub Pages** run. Its **build** and **deploy** jobs should both turn green within about two minutes. If it ran before you finished step 2, click **Re-run all jobs**.
+6. **Open the site** at `https://rsdanciu.github.io/frankenstein-sda-robert-jordan/`. The very first deploy can take a few minutes to appear; press Ctrl+F5 if you see an old or blank page.
+7. **From now on,** every push to `main` updates the live site automatically. To make it manual-only again, delete the `push:` block at the top of `.github/workflows/deploy.yml`.
+
+**If something goes wrong**
+- **The run fails at "configure-pages":** Pages isn't enabled yet (steps 1–2).
+- **The site shows a 404:** wait a few minutes, and check that the Source is "GitHub Actions".
+- **The page is blank after renaming the repo:** the name must match `base` in `vite.config.js`.
+
+**Also:**
+- The developer panel (`?dev=1`) works on the live site too, so anyone who adds that to the address can skip scenes. If you'd rather it only work on localhost, I can switch it off for the live build.
+- Your `gh` command line is signed in as `rsd12345`, not `rsdanciu`. The settings above need the owner account, or an admin on the repo.
+- I tested all of this on your computer with a copy of GitHub's build steps. The first real run on GitHub is the final check.
+
+Nothing is committed, and this exchange is in chatlogs.md.
+

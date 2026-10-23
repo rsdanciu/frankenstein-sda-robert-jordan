@@ -557,10 +557,28 @@ clothes): seated (`sit`) or standing, `setPose`, `lookAt`, `setTalking` (gesture
 
 - `base: '/frankenstein-sda-robert-jordan/'` in `vite.config.js`. Never hard-code absolute paths;
   use `publicUrl()` for files in `public/` and ES imports for files in `src/`.
-- `.github/workflows/deploy.yml` builds and deploys `dist/` but **only when run manually**
-  (Actions → Deploy to GitHub Pages → Run workflow). Before the first run: Settings → Pages →
-  Source = "GitHub Actions". Switch the trigger to `push` when you want automatic deploys.
-- `public/.nojekyll` is included in case Pages is ever switched to branch deploys.
+- Live URL: `https://rsdanciu.github.io/frankenstein-sda-robert-jordan/` (project site of the
+  `rsdanciu/frankenstein-sda-robert-jordan` repository). If the repository is renamed, change `base`
+  to the new name or every file will 404.
+- `.github/workflows/deploy.yml` builds and deploys `dist/` on **every push to `main`**, and can be
+  run by hand (Actions → Deploy to GitHub Pages → Run workflow). Delete its `push:` block to go back
+  to manual-only deploys. Steps: checkout → Node 22 → `configure-pages` (fails early with a clear
+  message if Pages is not enabled) → `npm ci` → `npm run build` → upload `dist/` → deploy. Action
+  versions (checkout v7, setup-node v7, configure-pages v6, upload-pages-artifact v5, deploy-pages v5)
+  run on GitHub's Node 24 runtime; the Node 20 one is retired.
+- One-time setup: Settings → Pages → Build and deployment → Source = "GitHub Actions".
+  The repository is **private**: Pages on a private repository needs a paid plan on the owner's
+  account (GitHub Pro is free for students through GitHub Education), or the repository must be made
+  public. Either way the published site itself is public.
+- `npm ci` installs exactly what `package-lock.json` lists, so commit the lockfile with any dependency
+  change. The lockfile includes the Linux build binaries the runner needs.
+- GitHub's runner is Linux, where file names are case-sensitive (Windows is not): an import or a
+  scene JSON name whose case differs from the file works locally and fails on Pages. Checked for
+  Prompt 7: all imports and scene files match exactly.
+- Before pushing, `npm run build && npm run preview` serves the build exactly as Pages will, at
+  `http://localhost:4173/frankenstein-sda-robert-jordan/`.
+- `public/.nojekyll` is included in case Pages is ever switched to branch deploys (Actions deploys
+  don't use Jekyll and skip hidden files).
 
 ---
 
@@ -587,7 +605,9 @@ clothes): seated (`sit`) or standing, `setPose`, `lookAt`, `setTalking` (gesture
 | Neutral tone mapping, MSAA render target, pixel ratio ≤ 2 (≤ 1.5 on touch) | Faithful colours, smooth edges, and 60 fps headroom (measured at the display's 144 Hz on a desktop GPU at 3840×1822). |
 | All JSON text via `textContent` | Quotes render exactly as written; no HTML injection. |
 | No progress persistence | A reload is a clean start for presentations. |
-| Manual-only deploy workflow | The brief starts with localhost; nothing publishes until the students choose. |
+| Deploy on every push to `main` (manual run kept) | Prompt 7 asked to finish live hosting: what is on `main` is what is live, with no extra step to forget. Until then deploys were manual-only, while the brief was localhost-only. |
+| Deploy concurrency does not cancel a running deploy | Cancelling a deploy halfway can leave Pages in a failed state; a newer push waits and then replaces it. |
+| `configure-pages` step in the workflow | Without Pages enabled, the run fails at the start with GitHub's own explanation instead of at the last step. |
 | Explanation popup is a generic `InfoModal` fed from JSON | The text stays editable without touching code, and the same popup can show other long text later. |
 | Popup has a large minimum height (≤ 62% of the screen) | Reads as a "large popup" even before the explanation is written; long text scrolls inside it. |
 | Bibliography heading read from JSON; optional `*italics*` | The students control the heading and any formatting; entries are shown exactly as written. |
