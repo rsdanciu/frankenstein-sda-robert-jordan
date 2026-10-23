@@ -13,6 +13,8 @@ import * as THREE from 'three';
  *   p.lookAt(point | null)         the head (and a little of the chest) turns to a world point
  *   p.setTalking(on)               hand gestures and small head movements while speaking
  *   p.nod()                        a small nod, e.g. while listening
+ *   p.walkTo(point, speed)         walks there (stride and arm swing over any held pose),
+ *                                  resolves on arrival; p.facing turns the body in place
  *   p.update(dt)
  *
  * Built facing +Z with the feet at y = 0. `p.object` is placed by the scene.
@@ -34,6 +36,9 @@ export const PERSON_DEFAULTS = {
 
 /** Victor Frankenstein, the same in every scene he appears in. */
 export const FRANKENSTEIN_STYLE = { height: 1.78, hair: '#2a1d14', top: '#d6d0c2', vest: '#35302c', bottom: '#2c2826', skin: '#d6a88a' };
+
+/** Robert Walton, the ship's captain: a dark blue sea coat, brown hair and beard. */
+export const WALTON_STYLE = { height: 1.75, hair: '#5e4128', beard: '#5e4128', top: '#2c3650', vest: '#232b40', bottom: '#2a2a2e', skin: '#dcae8e' };
 
 const BUILT_HEIGHT = 1.7;
 
@@ -57,6 +62,18 @@ export class Person {
     this.gesture = { side: Math.random() < 0.5 ? 'L' : 'R', amount: 0, target: 0, timer: 0 };
     this.nodTime = -10;
     this.pose = { goal: null, values: null, weight: 0, target: 0, rate: 3 };
+    this.facing = null; // target yaw for the whole body
+    this.turnRate = 3;
+    this.move = null; // { target, speed, resolve }
+    this.walkWeight = 0;
+    this.walkPhase = 0;
+  }
+
+  walkTo(point, speed = 1) {
+    this.move?.resolve();
+    return new Promise((resolve) => {
+      this.move = { target: new THREE.Vector3(point.x, this.object.position.y, point.z), speed, resolve };
+    });
   }
 
   setPose(pose, { rate = 3 } = {}) {
@@ -89,6 +106,7 @@ export class Person {
 
   update(dt) {
     this.time += dt;
+    this.#updateMovement(dt);
     const J = this.joints;
     const t = this.time;
     const breath = Math.sin(t * 1.7);
@@ -121,6 +139,22 @@ export class Person {
         const r = J[name].rotation;
         r.set(r.x + (v[0] - r.x) * P.weight, r.y + (v[1] - r.y) * P.weight, r.z + (v[2] - r.z) * P.weight);
       }
+    }
+
+    // Walking, over any held pose: the legs stride, the arms swing against them, the hips bob.
+    const w = this.walkWeight;
+    if (w > 1e-3) {
+      const s = Math.sin(this.walkPhase);
+      const c = Math.cos(this.walkPhase);
+      for (const [side, sign] of [['L', 1], ['R', -1]]) {
+        const leg = J[`leg${side}`].rotation;
+        leg.x += (0.45 * sign * s - leg.x) * w;
+        const knee = J[`knee${side}`].rotation;
+        knee.x += (0.75 * Math.max(0, -sign * c) - knee.x) * w;
+        J[`shoulder${side}`].rotation.x += -0.32 * sign * s * w;
+      }
+      J.hips.position.y += (Math.abs(c) * 0.025 - 0.015) * w;
+      J.hips.rotation.y += 0.06 * s * w;
     }
 
     // Gestures, added over any pose: while talking, one hand lifts in short bursts.
@@ -160,6 +194,29 @@ export class Person {
     const speak = this.talkWeight * (Math.sin(t * 6.3) * 0.025 + Math.sin(t * 2.3) * 0.03);
     J.chest.rotation.y += this.yaw * 0.25;
     J.head.rotation.set(this.pitch + nod + speak, this.yaw * 0.75, Math.sin(t * 0.5) * 0.03 * this.talkWeight, 'YXZ');
+  }
+
+  #updateMovement(dt) {
+    const M = this.move;
+    this.walkWeight = damp(this.walkWeight, M ? 1 : 0, 4, dt);
+    if (M) {
+      const p = this.object.position;
+      const to = _v.copy(M.target).sub(p);
+      to.y = 0;
+      const dist = to.length();
+      if (dist < 0.05) {
+        this.move = null;
+        M.resolve();
+      } else {
+        this.facing = Math.atan2(to.x, to.z);
+        p.addScaledVector(to.normalize(), Math.min(dist, M.speed * this.walkWeight * dt));
+      }
+    }
+    this.walkPhase += dt * Math.PI * 2 * (M ? M.speed / 1.35 : 0.8) * this.walkWeight; // about 1.35 m per stride pair
+    if (this.facing !== null) {
+      const r = this.object.rotation;
+      r.y += Math.atan2(Math.sin(this.facing - r.y), Math.cos(this.facing - r.y)) * (1 - Math.exp(-dt * this.turnRate));
+    }
   }
 
   // ─── Construction ──────────────────────────────────────────────────────────

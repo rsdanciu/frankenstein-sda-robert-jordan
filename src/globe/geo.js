@@ -4,7 +4,7 @@ const DEG = Math.PI / 180;
 
 /** Locations closer than this are treated as "the same place" and fanned apart. */
 export const DUPLICATE_RADIUS_KM = 25;
-/** Distance between the two Geneva markers (and any other shared location). */
+/** Distance between the markers of locations that share a place. */
 export const DUPLICATE_SEPARATION_KM = 110;
 
 /**
@@ -38,7 +38,7 @@ function offsetLatLon(lat, lon, km, bearing) {
 /**
  * Gives every location a `display` { lat, lon } used for its marker, camera focus
  * and journey arcs. world.json keeps the true coordinates; locations that share a
- * place (the two Geneva scenes) are fanned out west → east in story order.
+ * place are fanned out west → east in story order (none do at present).
  */
 export function spreadDuplicates(locations) {
   const groups = [];
@@ -55,7 +55,7 @@ export function spreadDuplicates(locations) {
     }
     members.forEach((loc, i) => {
       const bearing = -Math.PI / 2 + (i * 2 * Math.PI) / members.length;
-      // Labels open away from each other so the two names never overlap.
+      // Labels open away from each other so the names never overlap.
       const side = Math.sin(bearing) < -0.3 ? 'left' : Math.sin(bearing) > 0.3 ? 'right' : 'center';
       loc.display = { ...offsetLatLon(center.lat, center.lon, DUPLICATE_SEPARATION_KM / 2, bearing), labelSide: side };
     });

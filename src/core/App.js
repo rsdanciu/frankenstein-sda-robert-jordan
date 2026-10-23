@@ -291,8 +291,12 @@ export class App {
     this.ending.show(nihilism.history);
   }
 
+  /** Back to the start page for a fresh journey: a reload (keeping ?dev=1, but not a dev ?scene= jump). */
   #restart() {
-    window.location.reload(); // keeps ?dev=1
+    const url = new URL(window.location.href);
+    url.searchParams.delete('scene');
+    if (url.href === window.location.href) window.location.reload();
+    else window.location.assign(url.href);
   }
 
   /** If a transition throws, fall back to a usable globe rather than a frozen screen. */

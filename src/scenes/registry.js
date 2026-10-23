@@ -3,7 +3,6 @@ import IngolstadtScene from './locations/ingolstadt.js';
 import RuralGermanyScene from './locations/ruralGermany.js';
 import GenevaMountainsScene from './locations/genevaMountains.js';
 import ScotlandScene from './locations/scotland.js';
-import GenevaWeddingScene from './locations/genevaWedding.js';
 import PathToRuralRussiaScene from './locations/pathToRuralRussia.js';
 import ArcticWaltonsBoatScene from './locations/arcticWaltonsBoat.js';
 
@@ -14,7 +13,6 @@ export const SCENES = {
   ruralGermany: RuralGermanyScene,
   genevaMountains: GenevaMountainsScene,
   scotland: ScotlandScene,
-  genevaWedding: GenevaWeddingScene,
   pathToRuralRussia: PathToRuralRussiaScene,
   arcticWaltonsBoat: ArcticWaltonsBoatScene,
 };

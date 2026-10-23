@@ -2,7 +2,7 @@
 
 An interactive 3D website (Three.js + Vite, plain JavaScript) for an English-class creative
 analysis of *Frankenstein* and works of Nietzsche. The user travels across a procedural Earth,
-following the Monster's journey through seven locations. Each location is a scene with clickable
+following the Monster's journey through six locations. Each location is a scene with clickable
 components that reveal quotes and analysis and shift a global **Nihilism Coefficient**, which in
 turn drives the look of the world.
 
@@ -59,10 +59,16 @@ turn drives the look of the world.
 | world.json | Geneva (Mountains) end, Scotland end | {1, 0.85, 0} (Prompt 6) and {1, 1, 0.1} (the given 70 %) |
 | scenes/genevaMountains.json | all five `quote` and `analysis` fields, labels, deltas | exactly as supplied in Prompt 6 (the closing instruction "– This is a Nietzsche quote, add the special handling." is not part of the quote); overlook is Nietzsche; deltas 0 / 0 / U +0.3 / U +0.35 / U +0.2; steps 1–5, all required. See section 5d. |
 | Geneva (Mountains) scene | design | the whole brief (snowy ledge, steep rock, the warm valley below, the shadow between them, the approach, the argument, turning away); see section 5d |
+| scenes/pathToRuralRussia.json | both `quote` and `analysis` fields, labels, deltas, steps | exactly as supplied in Prompt 8 (the second quote's trailing space and its closing ‘ kept); labels "Note/message #1", "Note/message #2" (the object headings); deltas 0 ("0 Change for all", "No Change for all components"); steps 1–2, both required |
+| world.json | The path to Rural Russia end | {1, 1, 0.1} (Prompt 8: "Start and end at T = 1.00, U = 1.00, P = 0.10") |
+| The path to Rural Russia scene | design | the whole brief (a long path through remote snowy country, trees and rocks behind, hills far away, Frankenstein following the Monster, the two messages and his looking back); see section 5e |
 | Scotland scene | design | the whole brief (island cottage, sea and surf, low cloud, the warm light that fades, the Monster at the window, the destruction, his reactions); see section 5c |
+| scenes/arcticWaltonsBoat.json | all four `quote` and `analysis` fields, labels, deltas, steps | exactly as supplied in Prompt 10; labels are the object headings verbatim ("The cabin entrance", "Frankenstien’s Body", "The Monster’s face", "The opening towards the arctic"); the cabin entrance is Nietzsche (its separate line "This is a Nietzsche quote, ensuring it has the special formatting." is an instruction, not part of the quote); deltas 0 / P +0.6 / P +0.15 / P +0.15; steps 1–4, all required |
+| world.json | The Arctic and Walton's boat end | {1, 1, 1} (Prompt 10: "End at T=1, U=1, P=1") |
+| The Arctic and Walton's boat scene | design | the whole brief (Walton's ship in the ice, dark water, snowy land, the wooden cabin and its opening, Frankenstein under a blanket, the Monster over him slowing as Purpose rises, Walton, the cabin cooling); see section 5f |
+| Ending | flow | Prompt 10: the overview of the coefficient, then the works cited, where after 10 seconds a button returns to the start page (section 6) |
 
-Still `[PLACEHOLDER]`: `nihilismExplanation.text`, every `page` field, and every
-quote/analysis/page field in the three scenes not yet designed.
+Still `[PLACEHOLDER]`: `nihilismExplanation.text` and every `page` field. Every scene is now designed.
 
 The `label` values in ingolstadt.json ("Moon", "Tree branch", "Stream", "Berry bush") are short
 UI names taken from the students' own descriptions of the objects; they may be renamed freely.
@@ -126,38 +132,42 @@ src/
     shaders.js                GLSL (noise, Earth, clouds, atmosphere, stars)
     markers.js                location markers + labels
     arcs.js                   journey arcs between completed locations
-    geo.js                    lat/lon maths, duplicate-location fan-out (Geneva ×2)
+    geo.js                    lat/lon maths, fan-out for locations that share a place
   monster/
     Monster.js                the Monster (procedural, animated); MONSTER_STYLE, POSES
   people/
-    Person.js                 ordinary people (the cottagers, Victor): seated or standing, poses, look, talk
+    Person.js                 ordinary people (the cottagers, Victor, Walton): seated or standing, poses, look,
+                              talk, walk
   scenes/
     BaseScene.js              base class + hooks for every location scene
-    PlaceholderScene.js       generic placeholder (reads the scene JSON)
+    PlaceholderScene.js       generic placeholder (reads the scene JSON); the fallback for an id with no module
     ComponentTracker.js       steps, required/optional, enable/disable, completion
     environment.js            sky dome
     registry.js               location id → scene class
     grading.js                local colour grading: the drain around the Monster, rooms and valleys that keep
                               their warmth, distance haze
-    locations/<id>.js         one dedicated scene module per location (ingolstadt.js, ruralGermany.js,
-                              genevaMountains.js and scotland.js are built; the other three still
-                              extend PlaceholderScene)
+    locations/<id>.js         one dedicated scene module per location; all six are built (ingolstadt.js,
+                              ruralGermany.js, genevaMountains.js, scotland.js, pathToRuralRussia.js,
+                              arcticWaltonsBoat.js)
     buildings/                kit for houses (no image files):
       parts.js                  walls with openings and gables, metric boxes, timber framing
-      textures.js               plaster, timber, thatch, boards, stone, floor, straw, book pages, glow
+      textures.js               plaster, timber, thatch, boards, stone, floor, straw, book pages, notes,
+                                a wool blanket, glow
       fire.js                   flame cards (hearth, candle, lamp) and chimney smoke
     nature/                   reusable outdoor kit for dedicated scenes (no image or sound files):
       sky.js                    DaySky: day/night gradient, sun, full moon, stars, clouds, lighting state
       trees.js                  broadleaf + conifer generators, far silhouettes, foliage-card instancing
-      ground.js                 terrain mesh (grass/leaf-litter blend), grass, ferns, leaves, twigs, rocks
+      ground.js                 terrain mesh (two-texture blend, its material and drawn surface), grass, ferns,
+                                leaves, twigs, rocks
       water.js                  Stream: centre line, distance queries, water shader (ripples, reflections)
       mirror.js                 PlanarReflection: true reflections in still water (the puddle)
       sea.js                    open sea with swell and surf along the real coastline; spray bursts
       mist.js                   camera-facing mist sheets
+      snowfall.js               light falling snow kept around the camera (one draw call)
       birds.js                  Bird: flight, landing, perching, singing beak
       birdsong.js               synthesised birdsong phrases
       wind.js                   wind sway for foliage/grass materials
-      textures.js               canvas-drawn leaves, needles, grass, ferns, bark, forest floor
+      textures.js               canvas-drawn leaves, needles, grass, ferns, bark, forest floor, rock, snow
       random.js  glsl.js        seeded RNG + value noise (JS and GLSL)
   ui/
     StartMenu.js  HUD.js  QuoteModal.js  InfoModal.js  EndingMenu.js  WorldLabels.js  dom.js
@@ -205,10 +215,10 @@ All runtime JSON is fetched with `publicUrl(path)` = `import.meta.env.BASE_URL +
 - `locations[].nihilism`: each scene's **end value** (the global value is set to it when the scene completes).
 - `id`: camelCase, no spaces, also the scene file name **and** the key in `src/scenes/registry.js`.
   GitHub Pages is case-sensitive, so the id, file name, and registry key must match exactly.
-- `order`: 1…7 without gaps; navigation follows it strictly.
+- `order`: 1…6 without gaps; navigation follows it strictly.
 
 Current ids, in order: `ingolstadt`, `ruralGermany`, `genevaMountains`, `scotland`,
-`genevaWedding`, `pathToRuralRussia`, `arcticWaltonsBoat`.
+`pathToRuralRussia`, `arcticWaltonsBoat`.
 
 ### `public/json/scenes/<id>.json`
 
@@ -249,9 +259,8 @@ Current ids, in order: `ingolstadt`, `ruralGermany`, `genevaMountains`, `scotlan
 A one-page note counts as viewed as soon as it opens; its `nihilism` delta (0 in Ingolstadt) is
 applied then, since it has no Impact page. `quote` / `analysis` / `page` are not used for notes.
 
-Each placeholder scene (all except Ingolstadt) currently has three structural slots (step 1
-required, step 1 optional, step 2 required) only to exercise the step/required logic. The number of quotes, steps, and
-which are required are the students' decisions.
+The number of quotes, steps, and which are required are the students' decisions; every scene file now
+holds the students' own.
 
 ### `public/json/bibliography.json`
 
@@ -315,8 +324,8 @@ Everything coefficient-related is in this single file, with the mapping document
 
 ## 5. Scenes and components
 
-- `src/scenes/registry.js` maps each id to a class in `src/scenes/locations/<id>.js`. Ingolstadt,
-  Rural Germany, Geneva (Mountains) and Scotland are built; the other three still extend `PlaceholderScene`.
+- `src/scenes/registry.js` maps each id to a class in `src/scenes/locations/<id>.js`. All six are
+  built; an id with no module falls back to `PlaceholderScene`.
 - `BaseScene` build order: `buildEnvironment` → `buildBackground` → `buildForeground` → Monster is
   created → `placeMonster` → `buildInteractables`. Hooks: `onUpdate`, `onHover`, `prepareQuote`
   (async: runs after a click and before the menu opens, so an action is seen first), `onQuoteOpened`,
@@ -454,6 +463,71 @@ Implemented from the students' brief (Prompt 6); the design is theirs. Constants
      and his hands clench.
   5. *The Monster’s clenched hand.*: he holds his fist up; afterwards he turns his back on Frankenstein.
 
+### 5e. The path to Rural Russia (`src/scenes/locations/pathToRuralRussia.js`)
+
+Implemented from the students' brief (Prompt 8); the design is theirs. Constants at the top:
+`PATH_POINTS`, `TREE`, `ROCK`, `SPOTS`, `VIEWS`, `POSE` (the Monster), `VICTOR` (Frankenstein),
+`LIGHT`, `HAZE_PER_FOG`.
+
+- **Set:** open, remote snow country under low cloud and a low winter sun, with a light snowfall
+  (`nature/snowfall.js`; kept simple, as the brief asked). A long path winds away about a kilometre
+  over gentle rises toward hills 1.5–3 km off. A few spruce and bare winter trees stand near the
+  path; stands of trees and darker woods are further back, kept out of the line straight down the
+  path so the hills stay in view. Snow-capped rocks are scattered about.
+- **The path** is a ribbon laid on the snow, two trodden ruts with a ridge between. It uses the
+  ground's own material, texture tiling and normals (`groundMaterial`, `groundNormalAt`) so its edges
+  disappear into the snow, and follows the drawn surface (`groundSurfaceAt`) so it never floats or sinks.
+- **Distance** is a haze (`applyHaze`) whose density follows the coefficient's fog density, thinned
+  by `HAZE_PER_FOG`: at this scene's 0.70, ordinary fog would hide the far hills.
+- **The figures:** Frankenstein (`FRANKENSTEIN_STYLE`) follows on the path, always behind; the
+  Monster is ahead of him. `Person.walkTo` was added for this.
+- **The messages** are torn, weathered notes (`noteTexture`: ink strokes suggest handwriting; there
+  are no words). Note 1 is nailed to a bare tree beside the path, its sheet fitted to the real bark;
+  note 2 leans against a small rock at the path's edge. Each faces back down the path, toward
+  Frankenstein, and each appears only once the Monster has left it.
+- **Sequence:**
+  - Arrival: the Monster walks on ahead and pins note 1 to the tree; Frankenstein follows. The
+    Monster steps back onto the path and looks back toward him.
+  - 1. *Note/message #1*: the camera goes close to the note. Afterwards the camera moves on along
+    the path; the Monster walks on, kneels and leaves note 2 against the rock, steps back onto the
+    path and looks back toward Frankenstein, who has followed.
+  - 2. *Note/message #2*: the camera looks down at the note by the rock. Afterwards (Proceed is
+    shown) the Monster walks on along the path, still ahead, and the camera takes a wide view
+    down the path toward the hills.
+
+### 5f. The Arctic and Walton's boat (`src/scenes/locations/arcticWaltonsBoat.js`)
+
+Implemented from the students' brief (Prompt 10); the design is theirs. Constants at the top:
+`SHIP`, `CABIN`, `DOOR`, `OPENING`, `COT`, `LANTERN`, `SPOTS`, `VIEWS`, `POSE` (the Monster),
+`PEOPLE` (Walton, Frankenstein), `LIGHT`, `ROOM`, `ROOM_WARM`, `ROOM_COLD`, `SLOWEST`.
+
+- **The ship** is the primary element: a two-masted wooden ship (hull lofted from stations, deck,
+  bulwarks with snow along the rails, masts, yards with sails furled, bowsprit, rigging) frozen into
+  the pack ice. The ice is cells of floes with leads of dark water between them (a few floes gone
+  altogether), unbroken close round the ship with a pressure ridge of broken blocks where it meets
+  the pack; icebergs stand off, and snow-covered mountains run along the horizon 2.5–6 km away.
+  Distance is a haze, as in Rural Russia.
+- **The cabin** is a wooden deckhouse aft: its door faces forward onto the deck; its aft wall has a
+  large opening looking out over the stern onto the ice. Inside: a low cot along the starboard wall
+  with Frankenstein's body under a wool blanket (only his head shows, pale, on a pillow), the Monster
+  standing over him looking down, Walton (`WALTON_STYLE`) by the port side watching, a lantern on a
+  chain, a table with a chart, a chair, a chest, a shelf of books.
+- **Purpose and the cabin:** as the smoothed Purpose value rises from the scene's start to 1, the
+  lantern and the room's ambient go from warm to cold, the room's held saturation (`applyInteriorLight`)
+  falls from `ROOM_WARM.saturation` to the world's own, and a daylight fill from the opening grows so
+  everyone stays visible. The cabin's lights are not tied to the coefficient.
+- **The Monster's movements** slow with Purpose: `monster.timeScale` falls from 1 to `SLOWEST`
+  (breathing, sway, turning and walking all slow). His gaze is held each frame (on Frankenstein, then
+  on the ice), so hovering a component does not turn his head.
+- **Sequence:** the scene opens on the deck facing the cabin door.
+  1. *The cabin entrance*: the door swings out and the camera goes in over the threshold; the
+     Monster, Frankenstein and Walton are revealed.
+  2. *Frankenstien’s Body*: the camera closes in from the cot's foot on the Monster bent over him.
+  3. *The Monster’s face*: the camera moves level with his face, Walton beyond his shoulder.
+     Afterwards he slowly turns from the body toward the opening.
+  4. *The opening towards the arctic*: he walks (slowly) to it and stands looking out over the ice.
+     Proceed then leads to the ending (section 6).
+
 ### Recipe: building a dedicated scene
 
 1. In `src/scenes/locations/<id>.js`, change `extends PlaceholderScene` to `extends BaseScene`
@@ -481,9 +555,11 @@ Implemented from the students' brief (Prompt 6); the design is theirs. Constants
   descends from high above into the scene as the haze clears.
 - **Leave scene (Proceed):** the camera rises out of the scene into haze → emerges above the marker on
   the globe → the journey arc to the next location draws → pan to the next marker.
-- After location 7 the camera pulls out to an overview and the **ending menu** opens: line chart of the
-  coefficient + components over every recorded change (crosshair tooltip, arrow keys on focus),
-  per-scene table, then **Bibliography** and **Restart journey**.
+- After the last location (6) the camera pulls out to an overview and the **ending menu** opens: line chart of the
+  coefficient + components over every recorded change (crosshair tooltip, arrow keys on focus) and a
+  per-scene table, with one button, named by the works cited heading, to the **works cited**. On the
+  works cited, after `RESTART_DELAY` (10) seconds a **Return to the start** button fades in (and takes
+  focus); it reloads to the start page for a fresh journey (keeping `?dev=1`, dropping a dev `?scene=`).
 - Progress is not saved between page loads (a reload restarts the journey).
 
 ---
@@ -499,9 +575,10 @@ Implemented from the students' brief (Prompt 6); the design is theirs. Constants
 - Markers: pin + ring + glow, kept at a steady on-screen size. States: `next` (gold, pulsing, name
   shown), `completed` (blue, number), `locked` (grey, number), `available` (dev). DOM labels are
   clickable and hidden when on the far side.
-- **Two Geneva scenes:** world.json keeps the true coordinates; `spreadDuplicates()` fans out
-  locations within 25 km of each other by `DUPLICATE_SEPARATION_KM` (110 km) west → east in story
-  order, and their labels open away from each other.
+- **Locations that share a place:** world.json keeps the true coordinates; `spreadDuplicates()` fans
+  out locations within 25 km of each other by `DUPLICATE_SEPARATION_KM` (110 km) west → east in story
+  order, and their labels open away from each other. No two current locations are that close, so
+  every marker sits at its true coordinates.
 - Camera constants: `GLOBE_CAMERA` in `GlobeView.js`. Portrait screens pull the camera back.
 
 ---
@@ -515,12 +592,15 @@ are procedural: idle (breathing, sway, glances), walk (heavy gait, blended), hea
 `'sit'`, or a scene's own pose object; poses flow into each other, `'stand'` releases; a partial
 weight mixes a pose with walking, e.g. a crouch under a low roof), `reachTowards(point | null, 'L' | 'R')`
 (two-bone reach: the hand rests on the point when it is within reach, otherwise the arm points),
-`setMouthing(on)` (the jaw moves without sound), `clench(on)` (fists) and `eyePosition()`.
+`setMouthing(on)` (the jaw moves without sound), `clench(on)` (fists), `eyePosition()` and
+`timeScale` (1 = normal; lower slows everything he does, as Purpose collapses in the Arctic).
 All joints (now including `jaw`) are exposed via `monster.joints` for custom poses.
 The current look is a neutral starting point for the students to adjust.
 
 `src/people/Person.js` builds ordinary people in the same style (normal proportions, period
-clothes): seated (`sit`) or standing, `setPose`, `lookAt`, `setTalking` (gestures), `nod`.
+clothes): seated (`sit`) or standing, `setPose`, `lookAt`, `setTalking` (gestures), `nod`, and
+`walkTo(point, speed)` (a stride and arm swing over any held pose; `facing` turns them in place).
+`FRANKENSTEIN_STYLE` and `WALTON_STYLE` keep those two the same wherever they appear.
 
 ---
 
@@ -598,7 +678,7 @@ clothes): seated (`sit`) or standing, `setPose`, `lookAt`, `setTalking` (gesture
 | Procedural Earth from Natural Earth outlines | "Created with Three.js" and recognisable coastlines, with no texture files to license or host. |
 | Coastline JSON imported with `?url` (separate file, base-aware) | Keeps the JS bundle small; Vite prefixes it with the same base as `BASE_URL`. |
 | Sun follows the camera | Every location is lit when the camera arrives; no dark side to fight. |
-| Duplicate coordinates fanned out in code, not in JSON | world.json stays geographically true; the two Geneva markers stay distinct. |
+| Locations that share a place fanned out in code, not in JSON | world.json stays geographically true while every marker stays distinct and clickable. |
 | Placeholder scenes depict nothing about their location | Scene design and meaning belong to the students. |
 | Monster built procedurally in one module | Guarantees the identical figure in every scene, tunable in one place. |
 | Bundled fonts | Works offline and on Pages with no third-party requests. |
@@ -644,6 +724,22 @@ clothes): seated (`sit`) or standing, `setPose`, `lookAt`, `setTalking` (gesture
 | Geneva: the valley kilometres away and far below | From a ledge, a valley only shows above the edge when it is far enough away; this makes it "slightly visible" in the main view, as asked. |
 | Geneva: a shadow from an unseen rock rib, falling between them | Puts a clear band of shadow exactly between the two figures without a rock blocking the view of the valley. |
 | Geneva: an invisible floor over the ledge stops clicks | Clicks on the snow must not pass through to the valley far below. |
+| Rural Russia: the path as a ribbon sharing the ground's material, tiling and normals | A path in the terrain mesh's own colours would need a fine mesh all the way to the hills; a ribbon is sharp at any distance, and with the same material and normals its edges vanish even under a low sun (which shows the slightest mismatch). |
+| Rural Russia: haze in place of fog, following the coefficient's fog density | At 0.70 the scene fog would hide hills a kilometre or more away, and the brief asks for them; tying the haze to the fog density keeps the coefficient in control of it. |
+| Rural Russia: few trees near the path, woods kept out of the view down it | "Some trees and rocks in the background" in a "remote area": the open snow and the distant hills have to read. |
+| Rural Russia: the notes face back down the path and appear only when left | They are left for Frankenstein, who follows; a note that was there before the Monster reached it would not have been left by him. |
+| Rural Russia: note 1 fitted to the bark by raycasting each vertex | The trunk is not quite round; a sheet curved to an average radius sank into the bark in places. |
+| Rural Russia: the views look almost level (orbit limit lowered in this scene only) | A long path toward far hills is seen from eye height; the base orbit limit stops 3° above the target, which pushed these cameras up. |
+| A soft snow texture set (`snowTextures`) | The mountain snow texture's hard-edged marks show as rings under a low sun on open ground. |
+| Arctic: the cabin a deckhouse aft, the door forward, the opening in the aft wall over the stern | The deck in front of the door is where the scene begins; the opening then looks out over the ice, away from the ship. |
+| Arctic: the cabin's warmth and colour follow the smoothed Purpose value across this scene's range | The brief ties them to Purpose collapsing; mapping the scene's own start (0.1) to 1 uses the whole change for it. |
+| Arctic: the cabin's lights untied from the coefficient, with a daylight fill that grows as the warmth goes | At a coefficient of 1 the bound lights are at their dimmest; the brief asks that the objects and characters stay visible. |
+| Arctic: `Monster.timeScale` rather than slower animations one by one | One number slows every movement he makes, consistently, as Purpose rises. |
+| Arctic: the door opens outward | Opening inward, its leaf hid Walton from the doorway; ship cabin doors commonly open out. |
+| Arctic: a high polar summer sun (20°) | Lower, the bow's high bulwarks shaded the whole deck and the ship read as black. |
+| Arctic: Walton forward of the Monster, on the port side | So he shows past the Monster's shoulder from in front of his face, as the brief asks, and is in the doorway view. |
+| Ending: a single button from the overview to the works cited; the way back appears after 10 s | The order the brief gives: overview, then works cited, then (after the delay) back to the start. |
+| Restart drops a dev `?scene=` | Otherwise, in dev mode, "back to the start page" would jump straight into a scene. |
 
 ---
 
@@ -655,8 +751,8 @@ These are **theirs** to make. Claude must not choose them.
   `atZero`/`atOne` in `NIHILISM_VISUALS`.
 - **Coordinates** for places the brief names only as regions are rough geographic placeholders:
   Rural Germany (51.16, 10.45, centre of Germany), Scotland (56.49, −4.20, centre of Scotland),
-  The path to Rural Russia (57.0, 40.0), The Arctic and Walton's boat (79.5, 5.0). Both Geneva scenes use
-  Geneva (46.20, 6.14). Edit in world.json.
+  The path to Rural Russia (57.0, 40.0), The Arctic and Walton's boat (79.5, 5.0). Geneva (Mountains)
+  uses Geneva (46.20, 6.14). Edit in world.json.
 - All remaining content: the Nihilism Coefficient explanation, quotes, analysis, pages,
   `isNietzsche`, quote counts/steps/required flags, deltas, start and end values.
 - The Monster's look (`MONSTER_STYLE`) and each scene's design.
@@ -678,6 +774,24 @@ These are **theirs** to make. Claude must not choose them.
     young man); blue hour; the Monster's actions spread over the components as in section 5b; the
     open book on the ground between the puddle and the rock; how strongly colour and light drain
     (`DRAIN` in grading.js).
+- **The Arctic and Walton's boat, raised in Prompt 10:**
+  - The final overview opens after **Proceed**, like every other scene's next step; it could instead
+    open by itself a few seconds after the last menu closes.
+  - The cabin entrance's last line ("This is a Nietzsche quote, ensuring it has the special
+    formatting.") was treated as an instruction; the quote has the Nietzsche styling.
+  - `page` fields are `[PLACEHOLDER]` (the quotes carry their own citations).
+  - Choices made to build the brief: the ship (two masts, frozen in) and its surroundings; the cabin as
+    a deckhouse aft with the opening over the stern; the cot along the starboard wall; Walton's place
+    and coat; Frankenstein's pallor; when the Monster turns toward the opening (after his face); how
+    slow he becomes (`SLOWEST`); the cabin's warm and cold colours.
+- **The path to Rural Russia, raised in Prompt 8:**
+  - Rural Russia starts at {1, 1, 0.1}, Scotland's end value, as the brief says.
+  - `page` fields are `[PLACEHOLDER]` (the quotes carry their own citations).
+  - Choices made to build the brief: a low winter sun and light snowfall; the path's course and
+    length; which tree (a bare one, right of the path) and which side of the path the rock is on;
+    the notes as nailed and leaning paper rather than marks cut into bark or stone; Frankenstein
+    walking after the Monster and stopping when he stops; the Monster walking on along the path
+    after the second note.
 - **Geneva (Mountains), raised in Prompt 6:**
   - The overlook quote's closing note "– This is a Nietzsche quote, add the special handling." was
     treated as an instruction and left out of the quotation; the quote has the Nietzsche styling.

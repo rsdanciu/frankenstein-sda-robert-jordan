@@ -18,6 +18,8 @@ import * as THREE from 'three';
  *                                    rests on it when it is within reach)
  *   turnTowards(point)             – body turns to face a point
  *   walkTo(point, speed)           – walks there, resolves on arrival
+ *   timeScale                      – 1 = normal; lower slows everything he does (breathing,
+ *                                    sway, turning, walking, the blending between poses)
  *   joints                         – every joint Group, for custom scene poses
  *
  * The figure is built facing +Z with its feet at y = 0. Scenes move or scale
@@ -96,6 +98,7 @@ export class Monster {
     this.reach = { point: null, side: 'L', weight: 0 };
     this.mouth = { on: false, open: 0, phase: 0 };
     this.fist = { on: false, amount: 0 };
+    this.timeScale = 1;
   }
 
   setAnimation(name) {
@@ -158,6 +161,7 @@ export class Monster {
   }
 
   update(dt) {
+    dt *= this.timeScale;
     this.time += dt;
     this.#updateMovement(dt);
     this.walkWeight = damp(this.walkWeight, this.walkTarget, 4, dt);

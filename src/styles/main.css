@@ -1277,6 +1277,16 @@ body {
   margin-top: 24px;
 }
 
+/* The way back to the start fades in after its delay (EndingMenu RESTART_DELAY). */
+.ending-restart {
+  opacity: 0;
+  transition: opacity 0.6s var(--ease);
+}
+
+.ending-title:focus {
+  outline: none;
+}
+
 .bibliography {
   margin: 12px 0 0;
   padding-left: 0;

@@ -42,28 +42,20 @@
       "nihilism": { "truth": 1, "unity": 1, "purpose": 0.1 }
     },
     {
-      "id": "genevaWedding",
-      "name": "Geneva (Wedding)",
-      "order": 5,
-      "latitude": 46.2044,
-      "longitude": 6.1432,
-      "nihilism": { "truth": 0.5, "unity": 0.5, "purpose": 0.5 }
-    },
-    {
       "id": "pathToRuralRussia",
       "name": "The path to Rural Russia",
-      "order": 6,
+      "order": 5,
       "latitude": 57.0,
       "longitude": 40.0,
-      "nihilism": { "truth": 0.5, "unity": 0.5, "purpose": 0.5 }
+      "nihilism": { "truth": 1, "unity": 1, "purpose": 0.1 }
     },
     {
       "id": "arcticWaltonsBoat",
       "name": "The Arctic and Walton's boat",
-      "order": 7,
+      "order": 6,
       "latitude": 79.5,
       "longitude": 5.0,
-      "nihilism": { "truth": 0.5, "unity": 0.5, "purpose": 0.5 }
+      "nihilism": { "truth": 1, "unity": 1, "purpose": 1 }
     }
   ],
   "ending": {

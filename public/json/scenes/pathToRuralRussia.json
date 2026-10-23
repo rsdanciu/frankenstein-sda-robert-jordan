@@ -2,34 +2,25 @@
   "id": "pathToRuralRussia",
   "quotes": [
     {
-      "quote": "[PLACEHOLDER]",
-      "analysis": "[PLACEHOLDER]",
+      "label": "Note/message #1",
+      "quote": "On the path through Rural Russia, the Monster leaves many notes for Frankenstein along his pursuit. The Monster’s first note tells Frankenstein that “[Frankenstein] [lives], and [the Monster’s] power is complete” (Shelley 152).",
+      "analysis": "The messages in these notes demonstrate the Monster’s one purpose being for Frankenstein to suffer, highlighting how he is no longer driven by any permanent feature of the world. The Monster’s notion of deriving “power” from Frankenstein’s pursuit highlights how the Monster’s sense of belonging in the world is solely to torture Frankenstein. Frankenstein's suffering makes the Monster feel like his actions in the world matter, defining his self-perceived purpose.",
       "page": "[PLACEHOLDER]",
       "isNietzsche": false,
-      "objectId": "pathToRuralRussia-object-1",
+      "objectId": "pathToRuralRussia-note1",
       "order": 1,
       "nihilism": { "truth": 0, "unity": 0, "purpose": 0 },
       "step": 1,
       "required": true
     },
     {
-      "quote": "[PLACEHOLDER]",
-      "analysis": "[PLACEHOLDER]",
+      "label": "Note/message #2",
+      "quote": "The Monster later writes that “[Frankenstein’s] sufferings will satisfy my everlasting hatred‘ (Shelley 152). ",
+      "analysis": "The Monster claiming he can be satisfied suggests that his presumed purpose is not so definite. If the Monster is satisfied with Frankenstein’s suffering, what then becomes his purpose. The lack of any continuing purpose might cause him to progress into psychological Nihilism.",
       "page": "[PLACEHOLDER]",
       "isNietzsche": false,
-      "objectId": "pathToRuralRussia-object-2",
+      "objectId": "pathToRuralRussia-note2",
       "order": 2,
-      "nihilism": { "truth": 0, "unity": 0, "purpose": 0 },
-      "step": 1,
-      "required": false
-    },
-    {
-      "quote": "[PLACEHOLDER]",
-      "analysis": "[PLACEHOLDER]",
-      "page": "[PLACEHOLDER]",
-      "isNietzsche": false,
-      "objectId": "pathToRuralRussia-object-3",
-      "order": 3,
       "nihilism": { "truth": 0, "unity": 0, "purpose": 0 },
       "step": 2,
       "required": true

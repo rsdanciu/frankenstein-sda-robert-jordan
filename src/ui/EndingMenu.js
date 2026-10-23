@@ -3,11 +3,14 @@ import { COMPONENTS } from '../nihilism/nihilism.js';
 import { COMPONENT_NAMES } from './HUD.js';
 
 // Final menu after the Arctic scene: an overview of how the Nihilism Coefficient
-// changed across the journey (line chart + per-scene table), then the bibliography.
-// Title/text come from world.json `ending`; the bibliography heading and entries come
-// from json/bibliography.json (text wrapped in *asterisks* is shown in italics).
+// changed across the journey (line chart + per-scene table), then the works cited.
+// After RESTART_DELAY seconds on the works cited, a button appears that returns to the
+// start page for a fresh journey. Title/text come from world.json `ending`; the works
+// cited heading and entries come from json/bibliography.json (text wrapped in
+// *asterisks* is shown in italics).
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+const RESTART_DELAY = 10; // seconds on the works cited before the way back to the start appears
 
 // Identity colours match the HUD meter and the impact page (see --series-* in main.css).
 const SERIES = [
@@ -41,6 +44,7 @@ export class EndingMenu {
 
   async show(history) {
     this.history = history;
+    this.works = await this.loadBibliography(); // its heading names the button that leads to it
     this.#renderOverview();
     this.bibliography.hidden = true;
     this.overview.hidden = false;
@@ -50,6 +54,7 @@ export class EndingMenu {
   }
 
   hide() {
+    clearTimeout(this.restartTimer);
     return conceal(this.node);
   }
 
@@ -68,8 +73,7 @@ export class EndingMenu {
       this.chart,
       this.#table(),
       el('div', { className: 'ending-actions' }, [
-        el('button', { className: 'btn btn-primary', text: 'Bibliography', attrs: { type: 'button' }, on: { click: () => this.#showBibliography() } }),
-        el('button', { className: 'btn', text: 'Restart journey', attrs: { type: 'button' }, on: { click: () => this.onRestart() } }),
+        el('button', { className: 'btn btn-primary', text: this.works.title, attrs: { type: 'button' }, on: { click: () => this.#showBibliography() } }),
       ]),
     );
   }
@@ -185,25 +189,26 @@ export class EndingMenu {
     host.replaceChildren(root, tip);
   }
 
-  async #showBibliography() {
-    const { title, entries } = await this.loadBibliography();
-    const back = el('button', { className: 'btn', text: 'Back to overview', attrs: { type: 'button' }, on: { click: () => this.#showOverview() } });
+  #showBibliography() {
+    const { title, entries } = this.works;
+    const heading = el('h2', { className: 'ending-title', text: title, attrs: { tabindex: '-1' } });
+    const restart = el('button', { className: 'btn btn-primary ending-restart', text: 'Return to the start', attrs: { type: 'button', hidden: '' }, on: { click: () => this.onRestart() } });
     this.bibliography.replaceChildren(
-      el('h2', { className: 'ending-title', text: title }),
+      heading,
       entries.length
         ? el('ol', { className: 'bibliography' }, entries.map((e) => el('li', {}, withItalics(e))))
         : el('p', { className: 'ending-text', text: 'No entries yet.' }),
-      el('div', { className: 'ending-actions' }, back),
+      el('div', { className: 'ending-actions', attrs: { 'aria-live': 'polite' } }, restart),
     );
     this.overview.hidden = true;
     this.bibliography.hidden = false;
-    back.focus({ preventScroll: true });
-  }
-
-  #showOverview() {
-    this.bibliography.hidden = true;
-    this.overview.hidden = false;
-    this.#drawChart();
+    this.node.scrollTop = 0;
+    heading.focus({ preventScroll: true });
+    clearTimeout(this.restartTimer);
+    this.restartTimer = setTimeout(() => {
+      reveal(restart);
+      restart.focus({ preventScroll: true });
+    }, RESTART_DELAY * 1000);
   }
 }
 

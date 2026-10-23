@@ -7,6 +7,10 @@ import { fbm2 } from './random.js';
  *
  *   createGround({ heightAt, grassAt, tintAt, textures })  one large mesh, denser near the
  *       centre; blends a grass texture and a leaf-litter texture by grassAt(x, z) ∈ [0, 1]
+ *   groundSurfaceAt(ground, x, z)  the height of that mesh's own triangles (not heightAt) at a point
+ *   groundNormalAt(ground, x, z, target)  and its interpolated normal there
+ *   groundMaterial(textures)  the same blended material, for other geometry laid on the ground
+ *       (it needs uv, color and aGrass attributes)
  *   grassTuftGeometry / fernGeometry / flatLeafGeometry / twigGeometry / rockGeometry
  *   scatter(geometry, material, items)  → one InstancedMesh from [{ position, rotationY, scale, color, tilt }]
  */
@@ -57,6 +61,57 @@ export function createGround({ size = 320, segments = 320, power = 1.75, heightA
   geo.setIndex(new THREE.BufferAttribute(indices, 1));
   geo.computeVertexNormals();
 
+  const mesh = new THREE.Mesh(geo, groundMaterial(textures));
+  mesh.receiveShadow = true;
+  mesh.userData.grid = { size, segments, power };
+  return mesh;
+}
+
+/**
+ * The height of a createGround mesh's triangles at (x, z): what is actually drawn, which
+ * between vertices can sit above or below heightAt. Things laid on the ground (a path)
+ * follow this so they neither float nor sink under coarse far triangles.
+ */
+export function groundSurfaceAt(ground, x, z) {
+  const pos = ground.geometry.attributes.position;
+  const [a, b, c, wa, wb, wc] = triangleAt(ground, x, z);
+  return pos.getY(a) * wa + pos.getY(b) * wb + pos.getY(c) * wc;
+}
+
+/** The mesh's shading normal at (x, z), so something laid on it can light exactly like it. */
+export function groundNormalAt(ground, x, z, target = new THREE.Vector3()) {
+  const nor = ground.geometry.attributes.normal;
+  const [a, b, c, wa, wb, wc] = triangleAt(ground, x, z);
+  return target
+    .set(nor.getX(a) * wa + nor.getX(b) * wb + nor.getX(c) * wc, nor.getY(a) * wa + nor.getY(b) * wb + nor.getY(c) * wc, nor.getZ(a) * wa + nor.getZ(b) * wb + nor.getZ(c) * wc)
+    .normalize();
+}
+
+/** The triangle of a createGround mesh under (x, z): three vertex indices and their weights. */
+function triangleAt(ground, x, z) {
+  const { size, segments: n, power } = ground.userData.grid;
+  const half = size / 2;
+  const coord = (i) => {
+    const u = (i / n) * 2 - 1;
+    return Math.sign(u) * Math.pow(Math.abs(u), power) * half;
+  };
+  const index = (v) => {
+    const u = Math.sign(v) * Math.pow(Math.min(1, Math.abs(v) / half), 1 / power);
+    return Math.min(n - 1, Math.max(0, Math.floor(((u + 1) / 2) * n)));
+  };
+  const i = index(x);
+  const j = index(z);
+  const x0 = coord(i);
+  const z0 = coord(j);
+  const fx = THREE.MathUtils.clamp((x - x0) / (coord(i + 1) - x0), 0, 1);
+  const fz = THREE.MathUtils.clamp((z - z0) / (coord(j + 1) - z0), 0, 1);
+  const v = (ii, jj) => jj * (n + 1) + ii;
+  // Each quad is split along the (i + 1, j) – (i, j + 1) diagonal (see the index order above).
+  if (fx + fz <= 1) return [v(i, j), v(i + 1, j), v(i, j + 1), 1 - fx - fz, fx, fz];
+  return [v(i + 1, j + 1), v(i, j + 1), v(i + 1, j), fx + fz - 1, 1 - fx, 1 - fz];
+}
+
+export function groundMaterial(textures) {
   const material = new THREE.MeshStandardMaterial({
     map: textures.grassMap,
     normalMap: textures.normalMap,
@@ -82,9 +137,7 @@ export function createGround({ size = 320, segments = 320, power = 1.75, heightA
       );
   };
   material.customProgramCacheKey = () => 'ground-blend';
-  const mesh = new THREE.Mesh(geo, material);
-  mesh.receiveShadow = true;
-  return mesh;
+  return material;
 }
 
 /** Three crossed blades-cards, 1 × 1, rooted at y = 0. Normals point up so tufts light like the ground. */

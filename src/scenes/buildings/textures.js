@@ -16,6 +16,9 @@ import { makeCanvas, toTexture, wrapped, normalFromHeight } from '../nature/text
  *   strawTexture()     loose straw over earth (metres: 1.5)
  *   pageTexture()      an open book's two pages; ruled grey strokes stand in for lines of
  *                      print (there is no text in it)
+ *   noteTexture()      a torn, weathered sheet with lines of handwriting suggested by
+ *                      ink strokes (no text either); transparent outside its edge
+ *   blanketTexture()   a coarse wool blanket with dark bands near one end (UVs 0–1)
  */
 
 /** Sets the repeat so a texture drawn for `metres` tiles correctly on metric UVs. */
@@ -349,6 +352,84 @@ export function pageTexture({ seed = 101, width = 512, height = 256 } = {}) {
       }
     }
   }
+  return toTexture(c);
+}
+
+/**
+ * A handwritten note on a torn, weathered sheet: wavy ink strokes stand in for lines of
+ * writing (deliberately no letters or words), with a fold crease and a stained edge.
+ */
+export function noteTexture({ seed = 111, width = 256, height = 320 } = {}) {
+  const rng = new Rng(seed);
+  const [c, g] = makeCanvas(width, height);
+  // The torn outline: ragged edges, transparent outside (the material uses alphaTest).
+  g.beginPath();
+  const edge = (x, y) => [x + rng.float(-3, 3), y + rng.float(-3, 3)];
+  const pts = [];
+  for (let x = 6; x <= width - 6; x += 14) pts.push(edge(x, 6));
+  for (let y = 6; y <= height - 6; y += 14) pts.push(edge(width - 6, y));
+  for (let x = width - 6; x >= 6; x -= 14) pts.push(edge(x, height - 6 - (x < width * 0.4 ? rng.float(0, 8) : 0)));
+  for (let y = height - 6; y >= 6; y -= 14) pts.push(edge(6, y));
+  pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+  g.closePath();
+  g.fillStyle = '#e3d3b0';
+  g.fill();
+  g.save();
+  g.clip();
+  const stain = g.createRadialGradient(width * 0.5, height * 0.45, height * 0.15, width * 0.5, height * 0.5, height * 0.7);
+  stain.addColorStop(0, 'rgba(0,0,0,0)');
+  stain.addColorStop(1, 'rgba(110,80,45,0.45)');
+  g.fillStyle = stain;
+  g.fillRect(0, 0, width, height);
+  // A fold across the middle.
+  const fold = g.createLinearGradient(0, height * 0.47, 0, height * 0.53);
+  fold.addColorStop(0, 'rgba(90,70,45,0)');
+  fold.addColorStop(0.5, 'rgba(90,70,45,0.3)');
+  fold.addColorStop(1, 'rgba(255,250,235,0.15)');
+  g.fillStyle = fold;
+  g.fillRect(0, height * 0.47, width, height * 0.06);
+  // Lines of hurried writing: joined wavy strokes of uneven length.
+  g.strokeStyle = 'rgba(40,28,22,0.78)';
+  g.lineCap = 'round';
+  for (let y = height * 0.12; y < height * 0.86; y += height * 0.075) {
+    let x = width * 0.12;
+    const end = width * (rng.chance(0.2) ? rng.float(0.4, 0.7) : rng.float(0.8, 0.88));
+    while (x < end) {
+      const w = Math.min(end - x, rng.float(14, 46));
+      g.lineWidth = rng.float(1.6, 2.6);
+      g.beginPath();
+      g.moveTo(x, y);
+      for (let s = 0; s <= w; s += 3) g.lineTo(x + s, y + Math.sin(s * 0.7 + rng.float(0, 0.6)) * 2.4 - (s / w) * 1.5);
+      g.stroke();
+      x += w + rng.float(5, 10);
+    }
+  }
+  g.restore();
+  return toTexture(c);
+}
+
+/**
+ * A coarse wool blanket: a grey-brown weave with darker bands near one end (v = 1) and a
+ * fringe of wear. UVs 0–1 across the whole blanket.
+ */
+export function blanketTexture({ seed = 121, size = 512 } = {}) {
+  const rng = new Rng(seed);
+  const [c, g] = makeCanvas(size);
+  g.fillStyle = '#6e6152';
+  g.fillRect(0, 0, size, size);
+  // The weave: fine crossing threads of slightly different shades.
+  for (let i = 0; i < size; i += 2) {
+    g.fillStyle = `rgba(${rng.chance(0.5) ? '255,245,230' : '30,22,16'},${rng.float(0.03, 0.08)})`;
+    g.fillRect(0, i, size, 1);
+    g.fillStyle = `rgba(${rng.chance(0.5) ? '255,245,230' : '30,22,16'},${rng.float(0.03, 0.08)})`;
+    g.fillRect(i, 0, 1, size);
+  }
+  // Two dark bands near the top end, as on a ship's or army blanket.
+  for (const [y, h] of [[0.08, 0.05], [0.16, 0.02]]) {
+    g.fillStyle = 'rgba(38,30,26,0.75)';
+    g.fillRect(0, size * y, size, size * h);
+  }
+  noiseSpeckle(g, rng, size, 1800, ['rgba(255,240,220,0.12)', 'rgba(20,14,10,0.18)'], 0.6, 1.8);
   return toTexture(c);
 }
 

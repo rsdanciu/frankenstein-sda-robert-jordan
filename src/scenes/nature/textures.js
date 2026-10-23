@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { Rng } from './random.js';
 
 // Procedural textures drawn on canvases at build time (no image files): leaf clusters,
-// single leaves, conifer sprays, grass, fern fronds, bark and forest-floor ground.
+// single leaves, conifer sprays, grass, fern fronds, bark, forest-floor ground, rock and snow.
 // Height canvases drawn alongside some of them become tangent-space normal maps.
 // The canvas helpers are exported for other procedural texture sets (buildings/textures.js).
 
@@ -591,5 +591,61 @@ export function mountainTextures({ seed = 23, size = 1024 } = {}) {
     snowMap: toTexture(sc, { repeat: true }),
     rockMap: toTexture(rc, { repeat: true }),
     normalMap: normalFromHeight(hc, 2.6),
+  };
+}
+
+/**
+ * Snow lying on open ground, for createGround's two-texture blend, kept deliberately soft
+ * (no hard-edged marks, which a low sun picks out):
+ *   snowMap    – fresh snow: gentle drifts and a faint sparkle
+ *   trodMap    – packed, trodden snow, greyer, with dirty streaks along v (a path running along z)
+ *   normalMap  – the drifts' shallow relief
+ */
+export function snowTextures({ seed = 27, size = 1024 } = {}) {
+  const k = size / 1024;
+  const rng = new Rng(seed);
+  const [sc, sg] = makeCanvas(size);
+  const [tc, tg] = makeCanvas(size);
+  const [hc, hg] = makeCanvas(size);
+  const soft = (g, x, y, r, rgb, alpha) =>
+    wrapped(size, x, y, r, (px, py) => {
+      const grad = g.createRadialGradient(px, py, 0, px, py, r);
+      grad.addColorStop(0, `rgba(${rgb},${alpha})`);
+      grad.addColorStop(1, `rgba(${rgb},0)`);
+      g.fillStyle = grad;
+      g.fillRect(px - r, py - r, r * 2, r * 2);
+    });
+
+  sg.fillStyle = '#eef1f6';
+  sg.fillRect(0, 0, size, size);
+  hg.fillStyle = '#808080';
+  hg.fillRect(0, 0, size, size);
+  for (let i = 0; i < 70; i++) {
+    const x = rng.float(0, size);
+    const y = rng.float(0, size);
+    const r = rng.float(80, 260) * k;
+    soft(sg, x, y, r, rng.pick(['196,206,222', '255,255,255', '214,222,236']), rng.float(0.12, 0.24));
+    soft(hg, x, y, r, rng.chance(0.5) ? '255,255,255' : '0,0,0', rng.float(0.08, 0.16));
+  }
+  for (let i = 0; i < 1600; i++) soft(sg, rng.float(0, size), rng.float(0, size), rng.float(0.8, 1.8) * k, '255,255,255', 0.85);
+
+  tg.fillStyle = '#c9ccd0';
+  tg.fillRect(0, 0, size, size);
+  for (let i = 0; i < 90; i++) soft(tg, rng.float(0, size), rng.float(0, size), rng.float(40, 160) * k, rng.pick(['150,146,140', '226,230,236', '170,164,154']), rng.float(0.15, 0.3));
+  for (let i = 0; i < 220; i++) {
+    // Streaks pressed along the direction of travel.
+    const x = rng.float(0, size);
+    const y = rng.float(0, size);
+    const len = rng.float(40, 200) * k;
+    const w = rng.float(2, 7) * k;
+    tg.fillStyle = rng.pick(['rgba(120,112,102,0.16)', 'rgba(235,238,242,0.2)']);
+    wrapped(size, x, y, len, (px, py) => tg.fillRect(px - w / 2, py - len / 2, w, len));
+  }
+  for (let i = 0; i < 1400; i++) soft(tg, rng.float(0, size), rng.float(0, size), rng.float(1, 3) * k, '90,84,76', 0.3);
+
+  return {
+    snowMap: toTexture(sc, { repeat: true }),
+    trodMap: toTexture(tc, { repeat: true }),
+    normalMap: normalFromHeight(hc, 2.2),
   };
 }
