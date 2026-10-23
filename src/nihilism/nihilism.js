@@ -42,10 +42,12 @@
  *  Values in between are interpolated linearly (after the optional `curve`).
  *  Swap atZero / atOne on any line to invert that parameter.
  *
- *  OPEN DESIGN DECISION ─ the default endpoints read a HIGH coefficient (high
- *  truth / unity / purpose) as a vivid, bright, clear world and a LOW coefficient
- *  as a grey, dim, foggy one. Swap the endpoints if the project wants the
- *  opposite reading.
+ *  DIRECTION ─ set from the students' brief for Rural Germany (Prompt 4): "A
+ *  higher value of T represents a great collapse of faith in Truth", and as it
+ *  collapses the saturation and light drop. So a HIGH coefficient is a grey, dim,
+ *  foggy world. The 0 end is the look the scenes were first tuned at (the old
+ *  mid-point), so Ingolstadt, which stays at 0, looks exactly as it was built.
+ *  Swap the endpoints to invert the reading.
  * =============================================================================
  */
 
@@ -63,13 +65,13 @@ export const NIHILISM_VISUALS = {
   // How fast the visuals chase the real value, per second. Higher = snappier.
   smoothing: 1.8,
 
-  saturation:     { atZero: 0.15, atOne: 1.1 },   // 0 = greyscale, 1 = unchanged
-  vignette:       { atZero: 0.6, atOne: 0.18 },   // 0 = none, 1 = heavy
-  lightIntensity: { atZero: 0.35, atOne: 1.0 },   // × each light's base intensity
-  fogDensity:     { atZero: 0.05, atOne: 0.006 }, // FogExp2 density in scene units (metres)
-  skyTop:         { atZero: '#202329', atOne: '#3f7fd0' },
-  skyHorizon:     { atZero: '#5d6168', atOne: '#bcd6ee' },
-  space:          { atZero: '#020203', atOne: '#060b1c' },
+  saturation:     { atZero: 0.625, atOne: 0.15 }, // 0 = greyscale, 1 = unchanged
+  vignette:       { atZero: 0.39, atOne: 0.6 },    // 0 = none, 1 = heavy
+  lightIntensity: { atZero: 0.675, atOne: 0.35 },  // × each light's base intensity
+  fogDensity:     { atZero: 0.028, atOne: 0.05 },  // FogExp2 density in scene units (metres)
+  skyTop:         { atZero: '#325f9b', atOne: '#202329' },
+  skyHorizon:     { atZero: '#96a9bb', atOne: '#5d6168' },
+  space:          { atZero: '#040712', atOne: '#020203' },
 
   // The globe is 1 unit in radius, so its fog needs a much larger density to read.
   globeFogScale: 12,
@@ -270,20 +272,29 @@ export const visualParams = {
 };
 
 /**
+ * The scalar parameters for a coefficient, without applying them. Scenes use it to
+ * read the look they started with (e.g. to keep one area unchanged as the value moves).
+ */
+export function visualScalarsAt(coefficient) {
+  const V = NIHILISM_VISUALS;
+  const c = clamp01(V.curve(clamp01(coefficient)));
+  // Straight interpolation between the two endpoints.
+  return {
+    coefficient: c,
+    saturation: lerp(V.saturation.atZero, V.saturation.atOne, c),
+    vignette: lerp(V.vignette.atZero, V.vignette.atOne, c),
+    lightIntensity: lerp(V.lightIntensity.atZero, V.lightIntensity.atOne, c),
+    fogDensity: lerp(V.fogDensity.atZero, V.fogDensity.atOne, c),
+  };
+}
+
+/**
  * THE mapping function: coefficient (0–1) → every visual parameter.
  * Called every frame by nihilism.update() with the smoothed coefficient.
  */
 export function applyNihilismVisuals(coefficient) {
-  const V = NIHILISM_VISUALS;
-  const c = clamp01(V.curve(clamp01(coefficient)));
-  const p = visualParams;
-  p.coefficient = c;
-
-  // Scalars: straight interpolation between the two endpoints.
-  p.saturation = lerp(V.saturation.atZero, V.saturation.atOne, c);
-  p.vignette = lerp(V.vignette.atZero, V.vignette.atOne, c);
-  p.lightIntensity = lerp(V.lightIntensity.atZero, V.lightIntensity.atOne, c);
-  p.fogDensity = lerp(V.fogDensity.atZero, V.fogDensity.atOne, c);
+  const p = Object.assign(visualParams, visualScalarsAt(coefficient));
+  const c = p.coefficient;
 
   // Colours: interpolated in linear colour space.
   for (const k of COLOR_KEYS) p[k].lerpColors(colorEndpoints[k].atZero, colorEndpoints[k].atOne, c);

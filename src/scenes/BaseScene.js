@@ -4,9 +4,13 @@ import { ComponentTracker } from './ComponentTracker.js';
 import { createSkyDome } from './environment.js';
 import { Monster } from '../monster/Monster.js';
 import { WorldLabels } from '../ui/WorldLabels.js';
+import { el } from '../ui/dom.js';
 import { tween, Ease } from '../core/tween.js';
 import { IS_COARSE_POINTER } from '../core/renderer.js';
 import { nihilism, bindNihilismTargets, checkSceneEnd } from '../nihilism/nihilism.js';
+
+const DEG = Math.PI / 180;
+const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
  * Base class for every location scene.
@@ -26,6 +30,8 @@ import { nihilism, bindNihilismTargets, checkSceneEnd } from '../nihilism/nihili
  *   EVENTS
  *     onUpdate(dt, t)             every frame
  *     onHover(objectId | null)    pointer over a component
+ *     prepareQuote(quote)         async; runs after a click, before the menu opens (move the
+ *                                 camera, play an action); the menu waits for it
  *     onQuoteOpened(quote)        a quote menu opened
  *     onQuoteViewed(quote, impact) first time a quote reaches its impact page
  *     onQuoteClosed(quote, { viewed }) the menu closed again
@@ -37,9 +43,18 @@ import { nihilism, bindNihilismTargets, checkSceneEnd } from '../nihilism/nihili
  *     fitHome(aspect)       adjusts the landing framing for narrow (portrait) screens
  *     entryPosition(home)   where the zoom-in starts (default: high above and behind)
  *     exitPosition(from)    where the zoom-out ends
+ *     useViews(views)       named framings { name: { position, target, fov, needs } }; `home`
+ *                           is where the zoom-in lands. Each is widened (and pulled back) so a
+ *                           horizontal half-angle of `needs` degrees fits narrow screens.
+ *     flyTo(name, seconds)  glides the camera to a view and limits the orbit around it
+ *
+ *   LABELS
+ *     addComponentLabel(objectId, getPoint)  a clickable label pinned to a component
+ *                                 (quieter for optional ones), hidden while it is locked
  *
  * Step gating and manual enabling live in this.tracker (ComponentTracker). A registered
  * object whose `visible` is false cannot be clicked (e.g. a moon below the horizon).
+ * Objects in this.pickBlockers (walls, roofs) stop clicks reaching components behind them.
  */
 export class BaseScene {
   /** Camera framing when the zoom-in lands. Override per scene. */
@@ -48,9 +63,10 @@ export class BaseScene {
   /** Shown in the HUD so unfinished scenes are obvious. */
   static isPlaceholder = false;
 
-  constructor({ location, data, renderer, services }) {
+  constructor({ location, data, start = null, renderer, services }) {
     this.location = location;
     this.data = data;
+    this.start = start ?? nihilism.components; // the coefficient this scene begins at
     this.services = services; // { hud, quoteModal, picker, sceneLabelRoot, onSceneComplete }
     this.renderer = renderer;
 
@@ -72,16 +88,22 @@ export class BaseScene {
     this.tracker = new ComponentTracker(data.quotes);
     this.labels = new WorldLabels(services.sceneLabelRoot);
     this.interactables = new Map(); // objectId → Object3D
+    this.pickBlockers = []; // Object3Ds that hide components behind them from the pointer
+    this.componentLabels = new Map(); // objectId → label button
+    this.labelHovered = null;
     this.impacts = new Map(); // quote key → impact returned by nihilism.applyDelta
     this.hovered = null;
     this.interactive = false;
     this.completed = false;
+    this.leaving = false;
     this.disposed = false;
     this.elapsed = 0;
     this.unbinders = [];
 
     const home = this.constructor.cameraHome;
     this.home = { position: new THREE.Vector3(...home.position), target: new THREE.Vector3(...home.target) };
+    this.views = {}; // fitted named views (useViews)
+    this.viewName = 'home';
   }
 
   // ─── Build ──────────────────────────────────────────────────────────────────
@@ -157,6 +179,7 @@ export class BaseScene {
 
   onUpdate(dt, t) {}
   onHover(objectId) {}
+  async prepareQuote(quote) {}
   onQuoteOpened(quote) {}
   onQuoteViewed(quote, impact) {}
   onQuoteClosed(quote, result) {}
@@ -174,8 +197,77 @@ export class BaseScene {
 
   // ─── Camera choreography (the zoom-in / zoom-out halves of a transition) ─────
 
+  /** Named camera framings for a scene (see the header). Call from the constructor. */
+  useViews(defs) {
+    this.viewDefs = defs;
+    this.fitHome(this.camera.aspect);
+    this.limitOrbit(this.views.home);
+  }
+
+  #fitView(def, aspect) {
+    const position = new THREE.Vector3(...def.position);
+    const target = new THREE.Vector3(...def.target);
+    const need = (def.needs ?? 30) * DEG;
+    let fov = def.fov ?? 48;
+    if (aspect < 1.2) fov = Math.min(80, Math.max(fov, (2 * Math.atan(Math.tan(need) / aspect)) / DEG));
+    const have = Math.atan(Math.tan((fov * DEG) / 2) * aspect);
+    const k = Math.min(1.7, Math.max(1, Math.tan(need) / Math.tan(have)));
+    position.sub(target).multiplyScalar(k).add(target);
+    return { position, target, fov };
+  }
+
+  /** Keeps the user's orbit close to a view: a little turn either way, a little up, in and out. */
+  limitOrbit(view) {
+    const s = new THREE.Spherical().setFromVector3(new THREE.Vector3().subVectors(view.position, view.target));
+    Object.assign(this.controls, {
+      minDistance: s.radius * 0.75,
+      maxDistance: s.radius * 1.15,
+      minAzimuthAngle: s.theta - 0.34,
+      maxAzimuthAngle: s.theta + 0.34,
+      minPolarAngle: Math.max(0.2, s.phi - 0.2),
+      maxPolarAngle: Math.min(1.52, s.phi + 0.06),
+    });
+  }
+
+  /** Glides the camera to a named view (does nothing if it is already there). */
+  async flyTo(name, duration = 1.6) {
+    const view = this.views[name];
+    if (this.viewName === name && this.camera.position.distanceTo(view.position) < 0.05) return;
+    this.viewName = name;
+    const fromPos = this.camera.position.clone();
+    const fromTarget = this.controls.target.clone();
+    const fromFov = this.camera.fov;
+    const look = new THREE.Vector3();
+    await tween({
+      duration: REDUCED_MOTION ? 0.01 : duration,
+      ease: Ease.inOutCubic,
+      onUpdate: (e) => {
+        if (this.leaving) return;
+        this.camera.position.lerpVectors(fromPos, view.position, e);
+        this.camera.fov = fromFov + (view.fov - fromFov) * e;
+        this.camera.updateProjectionMatrix();
+        this.camera.lookAt(look.lerpVectors(fromTarget, view.target, e));
+      },
+    });
+    if (this.disposed || this.leaving) return;
+    this.controls.target.copy(view.target);
+    this.limitOrbit(view);
+  }
+
   /** Widens the view and pulls the home framing back on narrow (portrait) screens so components stay in view. */
   fitHome(aspect) {
+    if (this.viewDefs) {
+      if (!this.viewsFitted) {
+        this.viewsFitted = true;
+        for (const [name, def] of Object.entries(this.viewDefs)) this.views[name] = this.#fitView(def, aspect);
+      }
+      const home = this.views.home;
+      this.home.position.copy(home.position);
+      this.home.target.copy(home.target);
+      this.camera.fov = home.fov;
+      this.camera.updateProjectionMatrix();
+      return;
+    }
     if (aspect >= 1.2) return;
     this.camera.fov = aspect < 0.8 ? 60 : 54;
     this.camera.updateProjectionMatrix();
@@ -213,6 +305,7 @@ export class BaseScene {
   }
 
   async playExit(duration = 1.5) {
+    this.leaving = true; // scene animations still running must not hand control back
     this.setInteractive(false);
     const from = this.camera.position.clone();
     const target = this.controls.target.clone();
@@ -238,7 +331,7 @@ export class BaseScene {
   get pickTarget() {
     return {
       camera: this.camera,
-      objects: () => [...this.interactables.values()].filter((o) => o.visible),
+      objects: () => [...[...this.interactables.values()].filter((o) => o.visible), ...this.pickBlockers],
       onHover: (id) => {
         this.hovered = id;
         this.onHover(id);
@@ -263,6 +356,8 @@ export class BaseScene {
     if (!quote) return;
 
     this.setInteractive(false);
+    await this.prepareQuote(quote);
+    if (this.disposed) return;
     this.onQuoteOpened(quote);
     const result = await this.services.quoteModal.open({
       quote,
@@ -321,6 +416,59 @@ export class BaseScene {
     this.complete();
   }
 
+  // ─── Component labels ───────────────────────────────────────────────────────
+
+  /**
+   * A label button pinned to a component and named by its quote's `label`. Clicking it
+   * opens the component like clicking the object. Required components get a glass chip
+   * with a pulsing dot; optional ones a smaller, dimmer label (.poi in main.css).
+   */
+  addComponentLabel(id, getPoint = null) {
+    const object = this.interactables.get(id);
+    const quote = this.tracker.quotesFor(id)[0];
+    const required = this.tracker.objectState(id).required;
+    const name = quote?.label ?? id;
+    const node = el(
+      'button',
+      {
+        className: `poi ${required ? 'is-required' : 'is-optional'} is-hidden`,
+        attrs: { type: 'button', 'aria-label': required ? name : `${name} (optional)` },
+        on: {
+          click: () => this.openComponent(id),
+          pointerenter: () => this.#setLabelHover(id),
+          pointerleave: () => this.#setLabelHover(null),
+          focus: () => this.#setLabelHover(id),
+          blur: () => this.#setLabelHover(null),
+        },
+      },
+      [el('span', { className: 'poi-dot' }), el('span', { className: 'poi-name', text: name })],
+    );
+    node.disabled = true;
+    this.componentLabels.set(id, node);
+    this.labels.add(id, node, getPoint ?? ((t) => object.getWorldPosition(t)), () => object.visible);
+  }
+
+  #setLabelHover(id) {
+    this.labelHovered = id;
+    const object = id ? this.interactables.get(id) : null;
+    if (object) this.monster?.lookAt(object.userData.lookPoint ?? object.getWorldPosition(new THREE.Vector3()));
+  }
+
+  #updateComponentLabel(id, state, object) {
+    const node = this.componentLabels.get(id);
+    if (!node) return;
+    const visible = this.interactive && state.active && object.visible;
+    const hovered = state.hovered && state.active;
+    const key = `${visible}${state.pending}${state.viewed}${hovered}`;
+    if (node.dataset.key === key) return;
+    node.dataset.key = key;
+    node.classList.toggle('is-hidden', !visible);
+    node.classList.toggle('is-pending', state.pending);
+    node.classList.toggle('is-viewed', state.viewed);
+    node.classList.toggle('is-hovered', hovered);
+    node.disabled = !visible;
+  }
+
   // ─── Frame / lifecycle ──────────────────────────────────────────────────────
 
   update(dt) {
@@ -328,10 +476,13 @@ export class BaseScene {
     if (this.interactive) this.controls.update();
     this.monster?.update(dt);
     for (const [id, object] of this.interactables) {
-      const state = { ...this.tracker.objectState(id), hovered: id === this.hovered };
+      // A hovered label counts as hovering its object.
+      const state = { ...this.tracker.objectState(id), hovered: id === this.hovered || id === this.labelHovered };
       this.styleInteractable(object, state, this.elapsed);
+      this.#updateComponentLabel(id, state, object);
     }
     this.onUpdate(dt, this.elapsed);
+    this.camera.updateMatrixWorld(); // labels follow this frame's camera, even mid-flight
     this.labels.update(this.camera);
   }
 
@@ -342,6 +493,7 @@ export class BaseScene {
 
   dispose() {
     this.disposed = true;
+    this.labelHovered = null;
     this.onDispose();
     this.unbinders.forEach((unbind) => unbind());
     this.controls.dispose();

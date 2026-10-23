@@ -6,8 +6,12 @@ import { nihilism } from '../nihilism/nihilism.js';
 //   • a panel with a slider for the coefficient (sets all three components) and one
 //     per component, plus shortcuts: complete scene, exit scene, show ending, restart
 //   • an FPS readout
+//   • &scene=<id> (e.g. ?dev=1&scene=ruralGermany) skips the start menu and flies straight
+//     into that location
 
-export const DEV = new URLSearchParams(window.location.search).get('dev') === '1';
+const params = new URLSearchParams(window.location.search);
+export const DEV = params.get('dev') === '1';
+export const DEV_SCENE = DEV ? params.get('scene') : null;
 
 export class DevPanel {
   constructor(root, actions) {

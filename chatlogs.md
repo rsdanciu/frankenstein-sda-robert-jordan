@@ -240,3 +240,294 @@ Of course, Robert. The Ingolstadt clearing is built to your brief, and I played 
 - Checked on desktop (144 fps) and in a phone-sized portrait frame, with no console warnings. The dev server I reported as stopped was actually still running, so I tested on it and it's still up.
 
 CLAUDE.md documents all of this (a new section 5a, design decisions, and the four questions as open decisions). chatlogs.md has this exchange. Nothing is committed.
+
+---
+
+## Entry 5
+
+### Prompt (received 2026-10-22, before 23:30 −05:00; exact time not recorded)
+
+This prompt will work on the Rural Germany (The Cottagers) scene:
+
+Background:
+Build a small cottage beside a clearing in the woods. There should be a garden, scattered trees around the cottage, and a path leading away from the cottage. Through a window in the cottage, the user should be able to see a family gathered around a table in the cottage. 
+The Monster should be in a cramped hiding spot adjoined to the cottage. The audience’s view should allow them to see both the hiding spot and the interior of the cottage. Ensure there is a visible contrast between the two locations. As the Truth component of the Nihilism Coefficient collapses, reduce the saturation and light around the Monster. On the other hand, the light of the family’s interior should remain warm. This is to show that the Monster still desires his integration, but it becomes less and less possible. 
+
+Monster’s Actions:
+The Monster should get closer to the opening and silently tries to engage in communication. After realizing his difference, he draws back away from the cottage and examines his face in a puddle. He becomes demotivated. 
+
+Objects: 
+Cottage Opening/Window. Clicking should make the family’s conversation more visible/closer. 
+Context/Quote: In rural Germany, the Monster takes shelter near a small cottage. In the cottage he watches the cottagers, learning about language and human history. Nietzsche defines truth as when “man perceives that his world has been devised only for the purpose of meeting certain psychological needs, and that he has no right whatsoever to it” (Nietzsche 17).
+Analysis: While the monster is observing the cottagers, the Monster’s pursuit of knowledge, instead of bringing him closer to acceptance, leaves him with the understanding of his inability to fit into the world, losing his sense of Truth.
+Nihilism Coefficient: 0 Change for all components.
+This is a quote from Nietzsche so include some special formatting to highlight that on the quote tab for this object.
+The cottagers’ table
+Context/quote: The Monster describes learning language as opening “a wide field for wonder and delight” for him,
+Analysis: demonstrating the Monster’s hope that knowledge will lead him to acceptance among the humans (Shelley 84).
+Nihilism Coefficient: 0 Change for all components.
+The reflection of the Monster’s face in the puddle.
+Context/quote: However, as he learns that there is no one like him, he questions whether he is “a monster, a blot upon the earth from which all men fled and whom all men disowned” (Shelley 85).
+Analysis: This disconnect highlights how the Monsters newfound knowledge caused the realization of being an outcast.
+Nihilism Coefficient: T +0.35, U +0, P +0.
+The open book
+Context/quote: The Monster then relates the “agony that [those] reflections” caused him and that his “sorrow only increased with knowledge” (Shelley 85).
+Analysis: The Monster’s realization that his quest for learning has only led him to more pain reveals his withering faith in an objective Truth worth searching for.
+Nihilism Coefficient: T +0.3, U +0, P +0.
+The lichen-covered rock
+Context/quote: The Monster then finishes his loss of faith in Truth, by claiming that knowledge “clings to the mind when it has once seized on it like a lichen on the rock” and wishing to “shake off all thought and feeling” (Shelley 85).
+Analysis: Describing knowledge with words like “clings” and “seized” convey a parasitic notion that highlights the Monster’s new disdain for acquiring knowledge. Him wishing to no longer think or feel highlights his abandonment of searching for knowledge, revealing his collapse of Truth.
+Nihilism Coefficient: T +0.35, U +0, P +0.
+
+All 5 objects are required and must be completed in sequential order. Each object uses the three-page object flow, exactly like the objects in the previous scene. Starting values are T = 0, U = 0, P = 0. Ending: T = 1, U = 0, P = 0. A higher value of T represents a great collapse of faith in Truth. After the 5 objects are completed show the Proceed button and continue to the next scene. 
+
+### Response
+
+Answered together with Entry 6, because the next prompt arrived while this one was being built. The full response is under Entry 6.
+
+---
+
+## Entry 6
+
+### Prompt (received 2026-10-23, about 00:25 −05:00, while Entry 5 was in progress; exact time not recorded)
+
+This prompt will work on the Scotland scene:
+
+Background: 
+Build a small isolated cottage on a rocky Scottish island. It should be surrounded by sparse vegetation and a sea. Low clouds across the sky and waves strike the shoreline behind the cottage. 
+The user should have a clear view of Victor’s workbench and the unfinished female monster. egin with a small amount of warm light around the workbench, representing the Monster’s remaining hope for companionship. When Victor destroys his work, that warmth fades. 
+
+Foreground: 
+The Monster should be positioned outside the cottage. He should be watching Victor’s work through the window. Both the Monster’s reactions and Victor's work should be visible from the camera angle. At the beginning of the scene, the Monster should be watching Victor work through the window. When Victor destroys the unfinished female monster (make this a short, non-graphic animation), the Monster should become distressed, rigid, and confrontational as revenge becomes his new purpose.
+
+Objects: 
+The destroyed female monster on the workbench - The workbench sits inside the cottage, clearly visible through the window. After Victor’s destruction animation, the scattered remains of his work become clickable.
+Context/Quote: After the Monster demands for Frankenstein to build him a female, he follows him to Scotland. He watches Frankenstein start the work, almost complete it, and then destroy it entirely. The Monster storms in lamenting to Frankenstein, complaining that every man shall “find a wife for his bosom, and each beast have its mate, and [he] be alone” (Shelley 122). 
+Analysis: Watching his one hope for happiness dwindle, the Monster loses his last bit of faith in Unity, leading him to take on a new purpose of Frankenstein’s misery. Frankenstein’s realization that he will never fit into the assumed world order causes him to lose faith that there is a coherent world order at all, demonstrating his collapse of Unity. 
+Nihilism Coefficient: T +0, U +0.5, P +0.3
+The Monster’s clenched hand
+Context/Quote: He states that “revenge” will be “dearer than light or food” to him (Shelley 123).
+With his faith in Unity now broken, the Monster reconstructs his purpose from one about finding his place in the world to making Frankenstein miserable. Prioritizing revenge over the natural substances that sustain life highlights how the Monster’s rage at the world has turned his one desire to spite Frankenstein. This new purpose raises the question of whether the hate and anger will be able to sustain the Monster’s will to keep going. If not, he may slip further into psychological Nihilism. 
+
+Both objects are required and must be completed sequentially. Each uses the standard 3 page flow. Starting point for this scene: T = 1, U = 0.5, P = 0. 
+The destruction of the female monster damages the Monster’s faith in Unity and his existing purpose. Revenge partially restores the Monster’s sense of purpose of direction, resulting in a decrease from 76.75 to 70%.
+This recovery should be represented through the Monster’s movements. Apply each coefficient change only once. The destruction animation and the first object represent the same event and must not produce separate changes.
+When both objects are completed, show the Proceed button and continue to the next scene.
+
+Do not spend excessive time or tokens testing a ton of random stuff that is not necessary. Do not complete full tests of all scenes. Complete the task as efficiently as possible while ensuring the highest possible quality of this new scene.
+
+### Response to Entries 5 and 6 (sent 2026-10-23 00:45 −05:00)
+
+Of course, Robert. Rural Germany and Scotland are both built to your briefs, with your quotations and analyses in word for word. I played each scene through to Proceed in the browser.
+
+**Rural Germany (The Cottagers)**
+- A timber-framed, thatched cottage beside a clearing, with a fenced garden, scattered trees, and a path from the door into the woods. It is blue hour. Through the window, three family members talk at a table by candle and hearth light, taking turns to speak.
+- The Monster huddles in a cramped board lean-to built against the cottage wall. Its front is open so you can see in. A beam of the family's warm light through a chink in the wall falls on his face. The first view shows the cold hovel and the warm room side by side.
+- The five objects open in order, and each action plays before its menu:
+  1. **Window:** the camera moves in on the family and he edges up to the chink. Your Nietzsche quote gets the Nietzsche styling.
+  2. **Table:** his hand goes to the wall and his mouth moves silently. Then he draws back, crouches out of the hovel and kneels at the puddle.
+  3. **Puddle:** a true reflection of his face, with his hand at his cheek.
+  4. **Book:** he touches its pages.
+  5. **Rock:** a visibly lichen-covered boulder; he lays his hand on it, then slumps.
+- As Truth rises (0 → 0.35 → 0.65 → 1), colour and light drain from the area around him. The family's room stays warm: its lights aren't tied to the coefficient, and its colour is held against the greying.
+
+**Scotland**
+- A stone cottage with a rope-weighted thatch stands on a rocky island of heather and boulders. Surf breaks along the coastline and spray bursts on the rocks behind the cottage, under low cloud.
+- Through the front window, Victor works over the unfinished figure, a pale cast partly under a sheet, in a little warm lamplight. The Monster watches through the gable window, the same light on his face.
+- About five seconds in, Victor sweeps the figure from the bench. It's non-graphic: pale pieces tumble and the sheet slides off. The warmth fades, and the Monster recoils, then stands rigid with clenched fists and leans in. No coefficient change happens here.
+- Then the remains become clickable (U +0.5, P +0.3). Next is his clenched hand, which he holds up before the menu opens. Afterwards he straightens and strides to the rocks above the shore, where he stands upright facing the sea. The scene ends at 0.70 and Proceed appears.
+
+**Values I set from your numbers (please check)**
+1. **Coefficient direction:** you defined higher as a greater collapse, with less saturation and light. So a high value now looks grey and dim; before, it was the other way round. Ingolstadt looks exactly as before.
+2. **Starts and ends:**
+   - The overall start and Ingolstadt's end are now 0, and Rural Germany ends at T 1.
+   - Scotland's start (T 1, U 0.5, P 0) is only possible if Geneva (Mountains) ends there, so I set Geneva's end to that.
+   - The console will warn about Geneva until it's designed.
+3. **Clenched hand, P −0.2:** no delta was given. After the remains the value is 2.3 / 3 = 76.67% (your note says 76.75). Reaching 70% with purpose partly restored means P 0.3 → 0.1. Tell me if you meant otherwise.
+4. **Hand analysis:** its paragraph had no "Analysis:" label, so it went into the analysis by position.
+
+**Also**
+- **Labels:** your object headings are used word for word, including the full stop on the puddle one.
+- **Pages:** the page fields still show "p. [PLACEHOLDER]".
+- **My choices:** these are listed in CLAUDE.md §13 so you can change them:
+  - the three family members;
+  - the time of day in each scene;
+  - how the Monster's actions map to the objects;
+  - where the book lies;
+  - the five-second wait before the destruction;
+  - where he walks at the end.
+- **Engine additions:**
+  - Monster poses that blend into each other, a reach that bends at the elbow, silent mouthing and fists.
+  - A figure for ordinary people (the family and Victor).
+  - Kits for buildings, sea and puddle reflections.
+  - Shared camera views.
+  - A dev shortcut: `?dev=1&scene=<id>` opens a scene directly.
+- **Testing:**
+  - Both scenes ran at 144 fps whenever Chrome was drawing the tab normally. At times Chrome throttled the tab (even an empty frame ran at 1–2 fps), so some frame-rate readings during testing weren't meaningful.
+  - I checked portrait framing by calculation, not on a phone.
+  - Per your note, I didn't re-test the other scenes. Ingolstadt still loads and looks the same.
+
+CLAUDE.md is updated (new sections 5b and 5c, design decisions, open questions), and chatlogs.md has both prompts and this response. Nothing is committed.
+
+---
+
+## Entry 7
+
+### Prompt (received 2026-10-23; exact time not recorded)
+
+This prompt will work on the Geneva(Mountains) scene:
+
+Background: 
+Build a snowy mountain with steep slopes, exposed rock. There should be a distant view of the valley below.
+The valley should appear warmer/more inviting than the exposed mountain. As Unity increases, reduce saturation and light around the Monster while keeping the distant valet visible. 
+
+Foreground: 
+Place the Monster and Frankenstein (a new human figure) on a snowy ledge, facing each other. Both characters and the valley should be visible by the user. 
+The Monster should initially approach Frankenstein in a calm manner. Towards the end the Monster should appear more confrontational and turn away as they begin to disagree. 
+
+Objects: 
+The mountain overlook
+Context/quote: After being rejected by the cottagers, the Monster confronts Frankenstein atop a snowy mountain.The Monster laments to Frankenstein about how he has been cast out of society and by his own creator. Nietzsche describes Unity as the belief in the "presence of an All which is infinitely superior" to humans, reflecting that people derive meaning from an all-encompassing world order (Nietzsche 17). He also states that as a man loses his faith in Unity, he "loses the belief in his own worth when no infinitely precious entity manifests itself through him," suggesting that individuals often derive their self-worth from believing that they are part of a greater order, so when that order cannot explain their suffering, they lose faith in such an order existing (Nietzsche 17). – This is a Nietzsche quote, add the special handling.
+Analysis: The Monster's inability to explain why Frankenstein and Humanity rejects him despite his expectation of an ordered world reveals his weakening faith in Unity, moving him closer to psychological nihilism. 
+Nihilism Coefficient: T +0, U +0, P +0. No Change.
+Frankenstein himself - Click on Frankenstein should cause the Monster to take a step toward Frankenstein.
+Context/quote: Though angry at Frankenstein, the Monster initially addresses him as his "natural lord and king," 
+Analysis: demonstrating that the Monster believes that the creator and creation follow natural, ordered roles (Shelley 69). 
+Nihilism Coefficient: T +0, U +0, P +0. No Change.
+A shadow between the two characters. This shadow is supposed to draw attention to the distance between the Monster and Frankenstein. 
+Context/Quote: This worldview is challenged as the Monster claims that he "ought to be [Frankenstein's] Adam, but [he] is rather the fallen angel" (Shelley 69). 
+Analysis: The juxtaposition between how the Monster believes he should be treated and his rejection by Frankenstein creates his faltering belief in Unity. When he cannot understand his creator’s rejection of the ordered relationship he expected, the Monster starts doubting that a proper order exists at all. The use of biblical characters showcases how the Monster has taken this expected order as something divinely promised. However, when the biblical relationship does not manifest, the Monster loses faith in there being any divine order.
+Nihilism Coefficient: T +0, U +0.3, P +0.
+The valley in the distance. The valley should be slightly visible in the main camera view. When it is clicked, attention should shift to it. 
+Context/quote: Beyond the breakdown of the creator relationship, the Monster describes seeing "bliss" everywhere, "from which [he] alone was irrevocably excluded" despite him being "benevolent and good" (Shelley 69).’
+Analysis: His exclusion from human society despite being good goes against his expectation that the world operates on some defined order that rewards goodness with kindness and acceptance. When he cannot explain his isolation with his actions, his belief in Unity weakens further.
+Nihilism Coefficient: T +0, U +0.35, P +0.
+The Monster’s clenched hand. The Monster’s hand should become clenched towards the end of the scene as Frankenstein and the Monster begin to disagree and argue.
+Context/Quote: Plunging further into anger, the Monster vows to “keep no terms with [his] enemies” despite trying to negotiate terms with Frankenstein (Shelley 69).
+Analysis: This transformation from seeking justice to rejecting it reveals how the Monster loses any hope for a relationship with Frankenstein, diminishing his faith in Unity. The Monster’s change from seeking acceptance to rejecting the human world demonstrates his declining faith in Unity, bringing him closer to psychological nihilism.
+Nihilism Coefficient: T +0, U +0.2, P +0.
+
+All 5 objects are required and must be completed in sequential order. All of them use the standard object flow.
+Start at T = 1.00, U = 0, P = 0. End at T = 1.00, U = 0.85, P = 0.
+When the scene is complete, show the proceed button and continue to the next scene. 
+
+Additional Changes to be made: 
+Update Scotland’s First object to U +0.15, in place of U +0.5, so Unity reaches a value of exactly 1.00.
+
+### Response (sent 2026-10-23; usage limit reached during this prompt)
+
+Of course, Robert. Your usage limit was reached partway through this prompt, so only part of it is done.
+
+**Done**
+- `scenes/genevaMountains.json` has all five objects, with your text word for word. The Nietzsche styling is on for the overlook quote, and the deltas are 0 / 0 / U +0.3 / U +0.35 / U +0.2, all required, steps 1–5. I left out the trailing note "– This is a Nietzsche quote, add the special handling." because it's an instruction, not part of the quotation.
+- Geneva (Mountains) now ends at T 1, U 0.85, P 0 in `world.json`.
+- Scotland's first object is now U +0.15, so Unity reaches exactly 1.00 and Scotland still ends at 0.70.
+
+**Not done yet**
+- The Geneva (Mountains) scene itself still shows the placeholder. That covers the mountain, the valley, both figures, the shadow, the camera moves and the Unity colour drain.
+- CLAUDE.md doesn't describe the new scene yet.
+
+The scene build can continue from here next time. Nothing is committed.
+
+---
+
+## Entry 8
+
+### Prompt (received 2026-10-23; exact time not recorded)
+
+Continue.
+
+### Response (sent 2026-10-23 04:15 −05:00)
+
+Of course, Robert. Geneva (Mountains) is now built to your brief and plays through to Proceed. Your text is in word for word from the previous step.
+
+**What you'll see**
+- A snowy ledge high on a steep mountain, with bare rock walls and buttresses on either side and the drop beyond the edge.
+- Far below, a sunlit valley with fields, woods, a lake and a village with a church. In the main view it shows just above the ledge's edge, as you asked for a slightly visible valley.
+- The valley is kept at fuller colour and light, and seen through a warm haze rather than fog. So it stays visible and inviting while, around the Monster, the snow and rock grey and dim as Unity rises.
+- The Monster and Frankenstein face each other on the ledge. A band of shadow from a rock out of view lies on the snow exactly between them. Frankenstein is the same figure as in Scotland.
+
+**The sequence**
+- **Arrival:** the Monster walks calmly up to Frankenstein.
+- **1. The mountain overlook (Nietzsche styling):** the camera goes to the edge and looks out over the drop and the valley.
+- **2. Frankenstein himself:** the Monster takes a step toward him with an open hand held out, and Frankenstein leans back.
+- **3. A shadow between the two characters.:** the camera rises to look down on the shadow between them (U +0.3).
+- **4. The valley in the distance.:** attention shifts to it. The camera looks down at the valley and the Monster turns to it (U +0.35). Then they begin to argue: Frankenstein holds out an arm, refusing, and the Monster leans in as his hands clench.
+- **5. The Monster’s clenched hand.:** he holds up his fist (U +0.2). Afterwards he turns his back on Frankenstein, and Proceed appears at T 1.00, U 0.85, P 0.
+
+**Also**
+- Scotland's first object is now U +0.15. Scotland therefore starts at U 0.85 instead of the 0.5 its brief gave, and Unity still reaches exactly 1.00.
+- Labels are your headings word for word, including the full stops on three of them.
+- My build choices are listed in CLAUDE.md §13: afternoon light, the valley's contents and distance, what casts the shadow, and the arrival walk.
+- Chrome was throttling this tab heavily, so I tested by stepping the scene frame by frame from the page. Each step and value checked out, but I couldn't take a frame-rate reading for this scene.
+- The production build passes.
+
+CLAUDE.md has a new section 5d plus updated decisions and open questions, and chatlogs.md has this exchange. Nothing is committed.
+
+---
+
+## Entry 9
+
+### Prompt (received 2026-10-23, about 09:10 −05:00; the Prompt 6 brief pasted again, unchanged)
+
+This prompt will work on the Geneva(Mountains) scene:
+
+Background: 
+Build a snowy mountain with steep slopes, exposed rock. There should be a distant view of the valley below.
+The valley should appear warmer/more inviting than the exposed mountain. As Unity increases, reduce saturation and light around the Monster while keeping the distant valet visible. 
+
+Foreground: 
+Place the Monster and Frankenstein (a new human figure) on a snowy ledge, facing each other. Both characters and the valley should be visible by the user. 
+The Monster should initially approach Frankenstein in a calm manner. Towards the end the Monster should appear more confrontational and turn away as they begin to disagree. 
+
+Objects: 
+The mountain overlook
+Context/quote: After being rejected by the cottagers, the Monster confronts Frankenstein atop a snowy mountain.The Monster laments to Frankenstein about how he has been cast out of society and by his own creator. Nietzsche describes Unity as the belief in the "presence of an All which is infinitely superior" to humans, reflecting that people derive meaning from an all-encompassing world order (Nietzsche 17). He also states that as a man loses his faith in Unity, he "loses the belief in his own worth when no infinitely precious entity manifests itself through him," suggesting that individuals often derive their self-worth from believing that they are part of a greater order, so when that order cannot explain their suffering, they lose faith in such an order existing (Nietzsche 17). – This is a Nietzsche quote, add the special handling.
+Analysis: The Monster's inability to explain why Frankenstein and Humanity rejects him despite his expectation of an ordered world reveals his weakening faith in Unity, moving him closer to psychological nihilism. 
+Nihilism Coefficient: T +0, U +0, P +0. No Change.
+Frankenstein himself - Click on Frankenstein should cause the Monster to take a step toward Frankenstein.
+Context/quote: Though angry at Frankenstein, the Monster initially addresses him as his "natural lord and king," 
+Analysis: demonstrating that the Monster believes that the creator and creation follow natural, ordered roles (Shelley 69). 
+Nihilism Coefficient: T +0, U +0, P +0. No Change.
+A shadow between the two characters. This shadow is supposed to draw attention to the distance between the Monster and Frankenstein. 
+Context/Quote: This worldview is challenged as the Monster claims that he "ought to be [Frankenstein's] Adam, but [he] is rather the fallen angel" (Shelley 69). 
+Analysis: The juxtaposition between how the Monster believes he should be treated and his rejection by Frankenstein creates his faltering belief in Unity. When he cannot understand his creator’s rejection of the ordered relationship he expected, the Monster starts doubting that a proper order exists at all. The use of biblical characters showcases how the Monster has taken this expected order as something divinely promised. However, when the biblical relationship does not manifest, the Monster loses faith in there being any divine order.
+Nihilism Coefficient: T +0, U +0.3, P +0.
+The valley in the distance. The valley should be slightly visible in the main camera view. When it is clicked, attention should shift to it. 
+Context/quote: Beyond the breakdown of the creator relationship, the Monster describes seeing "bliss" everywhere, "from which [he] alone was irrevocably excluded" despite him being "benevolent and good" (Shelley 69).’
+Analysis: His exclusion from human society despite being good goes against his expectation that the world operates on some defined order that rewards goodness with kindness and acceptance. When he cannot explain his isolation with his actions, his belief in Unity weakens further.
+Nihilism Coefficient: T +0, U +0.35, P +0.
+The Monster’s clenched hand. The Monster’s hand should become clenched towards the end of the scene as Frankenstein and the Monster begin to disagree and argue.
+Context/Quote: Plunging further into anger, the Monster vows to “keep no terms with [his] enemies” despite trying to negotiate terms with Frankenstein (Shelley 69).
+Analysis: This transformation from seeking justice to rejecting it reveals how the Monster loses any hope for a relationship with Frankenstein, diminishing his faith in Unity. The Monster’s change from seeking acceptance to rejecting the human world demonstrates his declining faith in Unity, bringing him closer to psychological nihilism.
+Nihilism Coefficient: T +0, U +0.2, P +0.
+
+All 5 objects are required and must be completed in sequential order. All of them use the standard object flow.
+Start at T = 1.00, U = 0, P = 0. End at T = 1.00, U = 0.85, P = 0.
+When the scene is complete, show the proceed button and continue to the next scene. 
+
+Additional Changes to be made: 
+Update Scotland’s First object to U +0.15, in place of U +0.5, so Unity reaches a value of exactly 1.00.
+
+### Response (sent 2026-10-23 09:11 −05:00)
+
+Of course, Robert. This is the same Geneva (Mountains) brief I finished last turn, so I haven't rebuilt anything. I checked the build against it again and nothing needed changing.
+
+**What matches the brief**
+- All five quotes and analyses are in word for word. The closing note "– This is a Nietzsche quote, add the special handling." is left out of the quote, and the overlook has the Nietzsche styling.
+- The deltas are 0, 0, U +0.3, U +0.35 and U +0.2. All five objects are required and unlock in order, steps 1 to 5.
+- The scene starts at T 1, U 0, P 0 and ends at T 1, U 0.85, P 0, then shows Proceed. My run last turn reached those values.
+- Scotland's first object is U +0.15, so Unity reaches exactly 1.00 there. Scotland now runs T 1, U 0.85, P 0 → T 1, U 1, P 0.1, which is still 70 %.
+- The scene matches the brief:
+  - a snowy ledge with steep, exposed rock;
+  - the warm valley showing in the main view, which the camera turns to when clicked;
+  - colour and light draining around the Monster as Unity rises, while the valley stays visible;
+  - both characters facing each other;
+  - the step toward Frankenstein;
+  - the shadow between them;
+  - his hand clenching as they argue, then him turning away.
+
+**Still open:** Scotland's clenched-hand delta, P −0.2, is my derivation from your 70 % target. Please confirm it or give me the number.
+
+If you resent this brief because something looks wrong in the scene, tell me what and I'll change it. Nothing is committed, and this exchange is in chatlogs.md.
+

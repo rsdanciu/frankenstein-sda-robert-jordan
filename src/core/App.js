@@ -3,7 +3,7 @@ import { Picker } from './Picker.js';
 import { tween, updateTweens } from './tween.js';
 import { loadWorld, loadSceneData, loadBibliography } from './data.js';
 import { JourneyProgress } from './progress.js';
-import { DEV, DevPanel } from './dev.js';
+import { DEV, DevPanel, DEV_SCENE } from './dev.js';
 import { nihilism, bindGradePass, validateTimeline, expectedStartFor } from '../nihilism/nihilism.js';
 import { GlobeView } from '../globe/GlobeView.js';
 import { sceneClassFor } from '../scenes/registry.js';
@@ -100,6 +100,20 @@ export class App {
     document.getElementById('loader')?.remove();
     this.state = 'start';
     this.startMenu.show();
+    if (DEV_SCENE) this.#devEnter(DEV_SCENE);
+  }
+
+  /** Dev mode: ?dev=1&scene=<id> skips the start menu and enters that location. */
+  #devEnter(id) {
+    const loc = this.world.locations.find((l) => l.id === id);
+    if (!loc) {
+      console.warn(`[dev] No location "${id}" in world.json.`);
+      return;
+    }
+    this.startMenu.hide();
+    this.hud.setMeterVisible(true);
+    this.globe.idleSpin = false;
+    this.#enterLocation(loc).catch((err) => this.#recover(err));
   }
 
   showFatal(err) {
@@ -210,9 +224,10 @@ export class App {
     // Build the scene while the haze hides the switch.
     const data = await dataPromise;
     const SceneClass = sceneClassFor(loc.id);
-    const scene = new SceneClass({ location: loc, data, renderer: this.renderer, services: this.services });
+    const start = expectedStartFor(this.world, loc.index);
+    const scene = new SceneClass({ location: loc, data, start, renderer: this.renderer, services: this.services });
     await scene.build();
-    nihilism.set(expectedStartFor(this.world, loc.index)); // no-op in normal order; matters in dev mode
+    nihilism.set(start); // no-op in normal order; matters in dev mode
     this.globe.labels.setVisible(false);
     scene.placeCameraForEntry();
     this.scene = scene;

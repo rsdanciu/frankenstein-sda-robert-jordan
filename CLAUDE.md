@@ -48,12 +48,25 @@ turn drives the look of the world.
 | scenes/ingolstadt.json | `ingolstadt-berries` → `text` | the students' berry-bush sentence, exactly as supplied |
 | scenes/ingolstadt.json | every `nihilism` delta | 0 (students: "0 for all components" / "remains unchanged") |
 | Ingolstadt scene | design | the whole scene brief (setting, trees, opening, palette, mist, stream, day/night, objects, labels) is the students' design; see section 5a |
+| scenes/ruralGermany.json | all five `quote` ("Context/Quote") and `analysis` fields | exactly as supplied in Prompt 4 |
+| scenes/ruralGermany.json | `label`s | the students' object headings, verbatim ("Cottage Opening/Window", "The cottagers’ table", "The reflection of the Monster’s face in the puddle.", "The open book", "The lichen-covered rock") |
+| scenes/ruralGermany.json | deltas, steps | 0 / 0 / T +0.35 / T +0.3 / T +0.35; all required, steps 1–5 in order; the window quote is Nietzsche (`isNietzsche: true`) |
+| world.json | `start`, Ingolstadt end, Rural Germany end | {0, 0, 0}, {0, 0, 0}, {1, 0, 0} (Prompt 4: "Starting values are T = 0, U = 0, P = 0. Ending: T = 1, U = 0, P = 0"; Ingolstadt "is 0, it will remain unchanged") |
+| Rural Germany scene | design | the whole brief (cottage, garden, trees, path, family at the table, hovel, contrast, Monster's actions, objects); see section 5b |
+| scenes/scotland.json | both `quote` and `analysis` fields | exactly as supplied in Prompt 5 (trailing spaces kept). The second object's paragraph had no "Analysis:" label; it is in `analysis` because of where it sits |
+| scenes/scotland.json | `label`s | the object headings: "The destroyed female monster on the workbench", "The Monster’s clenched hand" |
+| scenes/scotland.json | deltas | remains: U +0.15, P +0.3 (U changed from +0.5 in Prompt 6). Hand: P −0.2, derived from the students' numbers (see section 13) |
+| world.json | Geneva (Mountains) end, Scotland end | {1, 0.85, 0} (Prompt 6) and {1, 1, 0.1} (the given 70 %) |
+| scenes/genevaMountains.json | all five `quote` and `analysis` fields, labels, deltas | exactly as supplied in Prompt 6 (the closing instruction "– This is a Nietzsche quote, add the special handling." is not part of the quote); overlook is Nietzsche; deltas 0 / 0 / U +0.3 / U +0.35 / U +0.2; steps 1–5, all required. See section 5d. |
+| Geneva (Mountains) scene | design | the whole brief (snowy ledge, steep rock, the warm valley below, the shadow between them, the approach, the argument, turning away); see section 5d |
+| Scotland scene | design | the whole brief (island cottage, sea and surf, low cloud, the warm light that fades, the Monster at the window, the destruction, his reactions); see section 5c |
 
-Still `[PLACEHOLDER]`: `nihilismExplanation.text`, the two Ingolstadt `page` fields, and every
-quote/analysis/page field in the other six scenes.
+Still `[PLACEHOLDER]`: `nihilismExplanation.text`, every `page` field, and every
+quote/analysis/page field in the three scenes not yet designed.
 
 The `label` values in ingolstadt.json ("Moon", "Tree branch", "Stream", "Berry bush") are short
 UI names taken from the students' own descriptions of the objects; they may be renamed freely.
+From Rural Germany on, the labels are the students' object headings, verbatim.
 
 ---
 
@@ -115,20 +128,31 @@ src/
     arcs.js                   journey arcs between completed locations
     geo.js                    lat/lon maths, duplicate-location fan-out (Geneva ×2)
   monster/
-    Monster.js                the Monster (procedural, animated); MONSTER_STYLE
+    Monster.js                the Monster (procedural, animated); MONSTER_STYLE, POSES
+  people/
+    Person.js                 ordinary people (the cottagers, Victor): seated or standing, poses, look, talk
   scenes/
     BaseScene.js              base class + hooks for every location scene
     PlaceholderScene.js       generic placeholder (reads the scene JSON)
     ComponentTracker.js       steps, required/optional, enable/disable, completion
     environment.js            sky dome
     registry.js               location id → scene class
-    locations/<id>.js         one dedicated scene module per location
-                              (ingolstadt.js is built; the other six still extend PlaceholderScene)
+    grading.js                local colour grading: the drain around the Monster, rooms and valleys that keep
+                              their warmth, distance haze
+    locations/<id>.js         one dedicated scene module per location (ingolstadt.js, ruralGermany.js,
+                              genevaMountains.js and scotland.js are built; the other three still
+                              extend PlaceholderScene)
+    buildings/                kit for houses (no image files):
+      parts.js                  walls with openings and gables, metric boxes, timber framing
+      textures.js               plaster, timber, thatch, boards, stone, floor, straw, book pages, glow
+      fire.js                   flame cards (hearth, candle, lamp) and chimney smoke
     nature/                   reusable outdoor kit for dedicated scenes (no image or sound files):
       sky.js                    DaySky: day/night gradient, sun, full moon, stars, clouds, lighting state
       trees.js                  broadleaf + conifer generators, far silhouettes, foliage-card instancing
       ground.js                 terrain mesh (grass/leaf-litter blend), grass, ferns, leaves, twigs, rocks
       water.js                  Stream: centre line, distance queries, water shader (ripples, reflections)
+      mirror.js                 PlanarReflection: true reflections in still water (the puddle)
+      sea.js                    open sea with swell and surf along the real coastline; spray bursts
       mist.js                   camera-facing mist sheets
       birds.js                  Bird: flight, landing, perching, singing beak
       birdsong.js               synthesised birdsong phrases
@@ -157,7 +181,7 @@ All runtime JSON is fetched with `publicUrl(path)` = `import.meta.env.BASE_URL +
 {
   "meta":   { "title": "Frankenstein SDA", "subtitle": "Robert Danciu and Jordan Abell" },
   "nihilismExplanation": { "title": "Nihilism Coefficient", "text": "[PLACEHOLDER]" },
-  "start":  { "truth": 0.5, "unity": 0.5, "purpose": 0.5 },
+  "start":  { "truth": 0, "unity": 0, "purpose": 0 },
   "locations": [
     {
       "id": "ingolstadt",
@@ -165,7 +189,7 @@ All runtime JSON is fetched with `publicUrl(path)` = `import.meta.env.BASE_URL +
       "order": 1,
       "latitude": 48.7665,
       "longitude": 11.4258,
-      "nihilism": { "truth": 0.5, "unity": 0.5, "purpose": 0.5 }
+      "nihilism": { "truth": 0, "unity": 0, "purpose": 0 }
     }
   ],
   "ending": { "title": "The Monster’s Journey Has Ended", "text": "The Monster has reached psychological nihilism" }
@@ -266,9 +290,20 @@ Everything coefficient-related is in this single file, with the mapping document
   | `skyTop`, `skyHorizon` | scene sky dome; horizon also fog colour and transition haze; skyTop tints the globe atmosphere |
   | `space` | globe background and globe fog colour |
 
-  Each is `{ atZero, atOne }`, linearly interpolated (optional `curve`). Views hand over their
+  Each is `{ atZero, atOne }`, linearly interpolated (optional `curve`). **Direction** (set from
+  the students' Prompt 4: "A higher value of T represents a great collapse of faith in Truth", and as
+  it collapses saturation and light drop): a HIGH coefficient is grey, dim and foggy. The 0 end is the
+  look the scenes were first tuned at (the earlier mid-point), so Ingolstadt, at 0, is unchanged.
+  `visualScalarsAt(c)` returns the scalars for any value without applying them. Views hand over their
   Three.js objects with `bindNihilismTargets({ lights, fogs, colors })`; scenes do it through
   `BaseScene.bindNihilism()` so bindings are removed on dispose.
+- **Local effects** (`src/scenes/grading.js`): the grade pass works on the whole frame, so two
+  material patches do what it cannot. `applyDrain` (Rural Germany) drains colour and light within a
+  radius of the Monster, following the smoothed Truth value. `applyInteriorLight` gives a room seen
+  from outside a warm ambient instead of the sky light and holds its saturation against the grade
+  pass (`uKeepSaturation` = wanted ÷ current), so the cottagers' room stays warm, and Scotland's lamp
+  is warm until the work is destroyed. `applyKeepBelow` holds colour and light for everything below a
+  world height (Geneva's valley), and `applyHaze` gives distance haze where fog would hide the view.
 - **Day/night scenes** (Ingolstadt): lights stay bound, but the scene updates each binding's `base`
   every frame from the time of day, so the coefficient still scales them. Fog density stays bound;
   its colour is set by the sky (`colorFrom: null`). The daytime sky colours are read live from
@@ -280,17 +315,23 @@ Everything coefficient-related is in this single file, with the mapping document
 
 ## 5. Scenes and components
 
-- `src/scenes/registry.js` maps each id to a class in `src/scenes/locations/<id>.js`. All seven
-  currently extend `PlaceholderScene`.
+- `src/scenes/registry.js` maps each id to a class in `src/scenes/locations/<id>.js`. Ingolstadt,
+  Rural Germany, Geneva (Mountains) and Scotland are built; the other three still extend `PlaceholderScene`.
 - `BaseScene` build order: `buildEnvironment` → `buildBackground` → `buildForeground` → Monster is
-  created → `placeMonster` → `buildInteractables`. Hooks: `onUpdate`, `onHover`, `onQuoteOpened`,
+  created → `placeMonster` → `buildInteractables`. Hooks: `onUpdate`, `onHover`, `prepareQuote`
+  (async: runs after a click and before the menu opens, so an action is seen first), `onQuoteOpened`,
   `onQuoteViewed`, `onQuoteClosed`, `onStepChange`, `onComplete`, `onDispose`, `styleInteractable`.
+  `this.start` is the coefficient the scene begins at.
   `static cameraHome = { position, target }` sets the landing framing; `fitHome(aspect)`,
   `entryPosition(home)` and `exitPosition(from)` can be overridden for portrait framing and for
-  where the zoom-in starts / zoom-out ends.
+  where the zoom-in starts / zoom-out ends. `useViews({ name: { position, target, fov, needs } })`
+  gives a scene named camera framings (`home` is where it lands; each is widened and pulled back
+  so `needs` degrees of half-width fit narrow screens) and `flyTo(name)` glides between them.
 - Every quote `objectId` must be registered with `this.registerInteractable(objectId, object3D)`;
   a missing one is warned about in the console. A registered object with `visible = false` cannot
   be clicked. `object.userData.lookPoint` tells the Monster where to look when it is hovered.
+  Meshes in `this.pickBlockers` (walls, roofs) stop clicks reaching components behind them.
+  `addComponentLabel(objectId, getPoint)` adds the component's label button (below).
 - `ComponentTracker` (`this.tracker`):
   - current step = lowest step with an unviewed required quote; components with `step ≤ current`
     are active; later ones are locked (click → "This unlocks at step N.");
@@ -334,6 +375,84 @@ every visit.
   Monster reach toward the branch. The objectIds are fixed in the scene code.
 - **Sound:** synthesised birdsong while the birds are perched in daylight (stereo-panned by screen
   position); toggled with the HUD speaker button.
+
+### 5b. Rural Germany (`src/scenes/locations/ruralGermany.js`)
+
+Implemented from the students' brief (Prompt 4); the design is theirs. Constants at the top:
+`COTTAGE`, `HOVEL`, `LAYOUT`, `SPOTS` (where the Monster is), `VIEWS`, `POSE`, `LIGHT`.
+
+- **Set:** a timber-framed cottage (plaster and oak frame, thatched roof, chimney with smoke)
+  beside a clearing: woods behind and to the left, scattered trees, a fenced kitchen garden in
+  front, and a path from the door around the cottage and away into the trees. Blue hour, cool sky
+  light outside. Through the large front window three family members talk at a table (a candle
+  on it, a hearth behind them); one speaks to another while the others listen and nod.
+- **Hiding spot:** a cramped board lean-to against the cottage's west wall, open at the front so
+  it can be seen into. The Monster huddles inside; a chink in the shared wall lets a beam of the
+  room's warm light fall on his face. The home view shows the dark hovel and the warm room side by side.
+- **Contrast and Truth:** the room's lights are not bound to the coefficient and its materials
+  keep the saturation they had when the scene began (`applyInteriorLight`). Everything outside is
+  patched with `applyDrain`: around the Monster colour and light drain away as the smoothed Truth
+  value rises, and the light near him fades by a third.
+- **Sequence** (each action plays before its menu opens; the next label appears when the next
+  action has finished):
+  1. *Cottage Opening/Window*: the camera moves closer to the family; he edges up to the chink.
+  2. *The cottagers’ table*: his hand on the wall by the chink, his jaw moving with no sound.
+     Then he pulls back, crouches out of the hovel and kneels at the puddle.
+  3. *The reflection…*: the camera looks down at the puddle, where his face is truly reflected
+     (`nature/mirror.js`); he leans over it, a hand to his face. Then he sits back on his heels.
+  4. *The open book*: he turns and touches its pages. Then he moves to sit against the rock.
+  5. *The lichen-covered rock*: he lays a hand on the lichen. Then his head sinks and the camera
+     settles on him beside the lit window.
+
+### 5c. Scotland (`src/scenes/locations/scotland.js`)
+
+Implemented from the students' brief (Prompt 5); the design is theirs. Constants at the top:
+`COTTAGE`, `LAYOUT`, `SPOTS`, `VIEWS`, `POSE` (the Monster), `VICTOR`, `LIGHT`, `WARM`.
+
+- **Set:** a small stone cottage with a rope-weighted thatch on a rocky island; heather, grass and
+  boulders; the sea all round (`nature/sea.js`) with surf along the real coastline and spray
+  bursting on the rocks behind the cottage; heavy low cloud and cloud banks at dusk.
+- **The work:** through the front window, Victor (a `Person`) works at the bench over the
+  unfinished female figure: a pale, smooth cast partly under a sheet, the head and dark hair showing.
+  A lamp gives a little warm light around the bench (and through the gable window onto the
+  Monster's face), held against the grade pass while it lasts.
+- **The Monster** stands outside at the gable window, watching; the home view shows his profile
+  and the bench through the front window.
+- **Sequence:** about five seconds after arrival Victor stops, raises his arms and sweeps the figure
+  from the bench (non-graphic: the pale pieces tumble onto the bench and floor, the sheet slides
+  off). The warmth fades (lamp, glow, the room's ambient and colour). The Monster recoils in
+  distress, then stands rigid with clenched fists and leans in, confrontational. No coefficient
+  change happens here: the destruction and the first component are one event.
+  1. *The destroyed female monster on the workbench*: the remains, clickable after the destruction.
+  2. *The Monster’s clenched hand*: he half turns and holds up his fist before the menu opens.
+     Afterwards, as his purpose is partly restored, he straightens, turns from the window and strides
+     to the rocks above the shore, where he stands upright facing the sea.
+
+### 5d. Geneva (Mountains) (`src/scenes/locations/genevaMountains.js`)
+
+Implemented from the students' brief (Prompt 6); the design is theirs. Constants at the top:
+`EDGE`, `VALLEY`, `SPOTS`, `VIEWS`, `POSE` (the Monster), `VICTOR` (Frankenstein), `LIGHT`,
+`VALLEY_SATURATION`.
+
+- **Set:** a snowy ledge high on a steep mountain, rock walls and buttresses either side, the drop
+  beyond the edge, and about 4–9 km away and 900 m below, a sunlit valley: fields, woods, a lake and
+  a village with a church. It is seen just above the ledge's edge in the main view ("slightly
+  visible") and fills the view when the valley is clicked. Two terrain meshes: a detailed one for
+  the ledge and the cliff's lip, and a large one for everything beyond.
+- **Valley vs. mountain:** the valley is held at fuller colour (`VALLEY_SATURATION`) and its unfaded
+  light, and seen through a warm distance haze instead of fog, so it stays visible and inviting.
+  Around the Monster, colour and light drain away as the smoothed Unity value rises.
+- **The shadow:** a band of shadow lies on the snow between them, from a rib of rock out of view
+  behind the camera (only its shadow is drawn); it runs from near the camera to the gap between them.
+- **Frankenstein** is the same `Person` as in Scotland (`FRANKENSTEIN_STYLE`).
+- **Sequence:** on arrival the Monster walks calmly up to Frankenstein. Then, in order:
+  1. *The mountain overlook*: the camera goes to the edge and looks out over the drop and the valley.
+  2. *Frankenstein himself*: the Monster takes a step toward him, an open hand held out; Frankenstein leans back.
+  3. *A shadow between the two characters.*: the camera rises to look down on the band between them.
+  4. *The valley in the distance.*: the camera looks down at the valley and the Monster turns to it.
+     Afterwards they begin to argue: Frankenstein holds out an arm, refusing; the Monster leans in
+     and his hands clench.
+  5. *The Monster’s clenched hand.*: he holds his fist up; afterwards he turns his back on Frankenstein.
 
 ### Recipe: building a dedicated scene
 
@@ -392,10 +511,16 @@ every visit.
 One procedural figure (Three.js primitives in a joint hierarchy) used in every scene so he is always
 the same silhouette. `MONSTER_STYLE` (height and colours) changes him everywhere at once. Animations
 are procedural: idle (breathing, sway, glances), walk (heavy gait, blended), head `lookAt`,
-`turnTowards`, `walkTo(point, speed)`, `setPose('sit' | 'stand')` (sitting on the ground, back
-leaning, one knee raised; `SIT_POSE`), and `reachTowards(point | null, 'L' | 'R')` (aims one arm at a
-point). All joints are exposed via `monster.joints` for custom poses.
+`turnTowards`, `walkTo(point, speed)`, `setPose(pose, { weight, rate })` (a `POSES` name such as
+`'sit'`, or a scene's own pose object; poses flow into each other, `'stand'` releases; a partial
+weight mixes a pose with walking, e.g. a crouch under a low roof), `reachTowards(point | null, 'L' | 'R')`
+(two-bone reach: the hand rests on the point when it is within reach, otherwise the arm points),
+`setMouthing(on)` (the jaw moves without sound), `clench(on)` (fists) and `eyePosition()`.
+All joints (now including `jaw`) are exposed via `monster.joints` for custom poses.
 The current look is a neutral starting point for the students to adjust.
+
+`src/people/Person.js` builds ordinary people in the same style (normal proportions, period
+clothes): seated (`sit`) or standing, `setPose`, `lookAt`, `setTalking` (gestures), `nod`.
 
 ---
 
@@ -420,6 +545,7 @@ The current look is a neutral starting point for the students to adjust.
 ## 10. Developer mode (`?dev=1`)
 
 - Every location unlocked (any order, re-enterable).
+- `?dev=1&scene=<id>` (e.g. `scene=ruralGermany`) skips the start menu and flies straight into that location.
 - Glass panel bottom-left: **Coefficient** slider (sets all three components), one slider per
   component, FPS readout, and buttons: Complete scene (applies remaining required deltas and completes),
   Exit scene, Show ending, Restart. Entering a scene still resets the value to that scene's start value.
@@ -478,6 +604,26 @@ The current look is a neutral starting point for the students to adjust.
 | Birdsong synthesised, with a mute button | The interaction is about birdsong; sound needs an off switch for classrooms. |
 | One-page notes (`"menu": "single"`) as a JSON option | The students asked for a one-step menu for the stream and berries; keeping it in JSON lets them use it elsewhere. |
 | Trunk/limb tubes wound counter-clockwise | Fixed during Prompt 3: the first version rendered inside-out (back faces showing). |
+| Mapping direction flipped (high = grey, dim, foggy) with the old mid-point as the 0 end | The students defined a higher value as a greater collapse and asked for saturation and light to drop as it rises; keeping the old mid-point at 0 leaves the tuned Ingolstadt exactly as it was. |
+| Ingolstadt end and Geneva (Mountains) end set from the next scene's stated start | A scene starts at the previous scene's end, so the start values the students gave can only be met that way. |
+| Local drain and kept interior as material patches (`grading.js`) | The grade pass can only change the whole frame; "less light and colour around the Monster, the family's room stays warm" needs per-area control. |
+| Interior lights not bound to the coefficient | The brief: the family's light remains warm. |
+| One shared camera-view system (`useViews`, `flyTo`) | Rural Germany and Scotland both move between framings for their components; one implementation keeps them consistent. |
+| Actions play before each menu opens (`prepareQuote`) | The menu covers the middle of the screen; the action has to be seen first. |
+| Real planar reflection for the puddle, drawing only chosen objects | The puddle component is the reflection of his face, so it has to be a true reflection; a reflection layer keeps the extra render cheap. |
+| The hovel open at the front, the chink in the shared wall, the beam of warm light | The brief asks for a cramped hiding spot adjoined to the cottage, seen together with the room; the beam ties the two. |
+| The Monster's actions spread over the five components in the brief's order | Approach and silent speech at the window and table, drawing back to the puddle before it, and becoming demotivated over the last three, as Truth rises. |
+| Walls block picking | Components inside a building can only be clicked through its openings. |
+| Two-bone reach | A hand flat on the wall, on a page or on a stone, instead of an arm passing through it. |
+| Scotland: the Monster at a gable window, the camera through the front window | Lets one camera see both his face (in profile) and the bench, as the brief requires. |
+| Scotland: the destruction plays by itself, a few seconds after arrival | The first component becomes clickable only after it; nothing else starts it. |
+| Scotland: the figure is a pale cast under a sheet, broken into smooth pieces | Recognisable as the unfinished figure while keeping the destruction non-graphic, as asked. |
+| Scotland: surf from a baked coastline height map | The foam follows the island's real shore instead of a painted ring. |
+| A dense, warm lamp held against the grade pass until the destruction | At this scene's coefficient the frame is already greyed; the warmth has to read, and its fading is the brief's signal. |
+| Geneva: the valley held at fuller colour and its unfaded light, with haze instead of fog | The brief: the valley warmer and more inviting than the mountain, and still visible as Unity rises. |
+| Geneva: the valley kilometres away and far below | From a ledge, a valley only shows above the edge when it is far enough away; this makes it "slightly visible" in the main view, as asked. |
+| Geneva: a shadow from an unseen rock rib, falling between them | Puts a clear band of shadow exactly between the two figures without a rock blocking the view of the valley. |
+| Geneva: an invisible floor over the ledge stops clicks | Clicks on the snow must not pass through to the valley far below. |
 
 ---
 
@@ -485,8 +631,8 @@ The current look is a neutral starting point for the students to adjust.
 
 These are **theirs** to make. Claude must not choose them.
 
-- **Direction of the visual mapping.** Defaults read a HIGH coefficient as vivid/bright/clear and a
-  LOW one as grey/dim/foggy. To invert, swap `atZero`/`atOne` in `NIHILISM_VISUALS`.
+- **Direction of the visual mapping.** Now set from Prompt 4 (high = grey/dim/foggy). To invert, swap
+  `atZero`/`atOne` in `NIHILISM_VISUALS`.
 - **Coordinates** for places the brief names only as regions are rough geographic placeholders:
   Rural Germany (51.16, 10.45, centre of Germany), Scotland (56.49, −4.20, centre of Scotland),
   The path to Rural Russia (57.0, 40.0), The Arctic and Walton's boat (79.5, 5.0). Both Geneva scenes use
@@ -500,11 +646,35 @@ These are **theirs** to make. Claude must not choose them.
   - *Berry bush:* the brief says "Object 4: Required: Another optional object". It is built as
     **optional** (matching "optional", the one-step menu and "the optional objects"). Set
     `"required": true` if it should be required.
-  - *"The Nihilism Coefficient for this scene is 0, it will remain unchanged":* read as a change of 0.
-    The end value equals the start value (both still the 0.5 placeholder). If the coefficient itself
-    should be 0, set `start` and the Ingolstadt end value in world.json.
+  - *"The Nihilism Coefficient for this scene is 0":* settled by Prompt 4 (Rural Germany starts at 0),
+    so `start` and Ingolstadt's end are now {0, 0, 0}.
   - The night/morning holds and the continuous cycle afterwards (see section 5a) are an
     interpretation of "continuous day and night" plus the two interaction states; `TIME` changes it.
+- **Rural Germany, raised in Prompt 4:**
+  - `page` fields are `[PLACEHOLDER]` (the quotes carry their own citations), as in Ingolstadt.
+  - Labels are the object headings verbatim, including the full stop in "The reflection of the
+    Monster’s face in the puddle." Shorten them in the JSON if wanted.
+  - Choices made to build the brief, all easy to change: three family members (older man, woman,
+    young man); blue hour; the Monster's actions spread over the components as in section 5b; the
+    open book on the ground between the puddle and the rock; how strongly colour and light drain
+    (`DRAIN` in grading.js).
+- **Geneva (Mountains), raised in Prompt 6:**
+  - The overlook quote's closing note "– This is a Nietzsche quote, add the special handling." was
+    treated as an instruction and left out of the quotation; the quote has the Nietzsche styling.
+  - Labels are the object headings verbatim (with the full stops on three of them).
+  - Choices made to build the brief: afternoon light; the valley's distance and contents (fields,
+    woods, lake, village); what makes the shadow; the arrival walk; which beats the argument and the
+    turning away follow.
+- **Scotland, raised in Prompt 5:**
+  - The clenched hand's delta (P −0.2) is derived: after the remains the value is (1 + 1 + 0.3) / 3
+    = 76.67 % (the brief says 76.75), and 70 % with revenge restoring purpose means P 0.3 → 0.1.
+    Confirm it, or give the delta.
+  - (Settled by Prompt 6: Geneva (Mountains) is designed and ends at {1, 0.85, 0}.)
+  - The second object's unlabeled paragraph was placed in `analysis`.
+  - Prompt 6 changed the remains to U +0.15 and Geneva now ends at U 0.85, so Scotland starts at
+    {1, 0.85, 0} rather than the {1, 0.5, 0} its brief gave; Unity still reaches exactly 1.00.
+  - Choices made to build the brief: dusk; the figure as a pale cast under a sheet; the destruction
+    starting about five seconds after arrival; where he walks afterwards (the rocks above the shore).
 
 ---
 

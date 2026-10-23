@@ -4,15 +4,16 @@ import { Rng } from './random.js';
 // Procedural textures drawn on canvases at build time (no image files): leaf clusters,
 // single leaves, conifer sprays, grass, fern fronds, bark and forest-floor ground.
 // Height canvases drawn alongside some of them become tangent-space normal maps.
+// The canvas helpers are exported for other procedural texture sets (buildings/textures.js).
 
-function makeCanvas(w, h = w) {
+export function makeCanvas(w, h = w) {
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
   return [c, c.getContext('2d')];
 }
 
-function toTexture(canvas, { srgb = true, repeat = false } = {}) {
+export function toTexture(canvas, { srgb = true, repeat = false } = {}) {
   const t = new THREE.CanvasTexture(canvas);
   if (srgb) t.colorSpace = THREE.SRGBColorSpace;
   if (repeat) t.wrapS = t.wrapT = THREE.RepeatWrapping;
@@ -65,7 +66,7 @@ function drawLeaf(g, x, y, len, width, angle, fill, { vein = 'rgba(255,250,220,0
 }
 
 /** Repeats a draw call across the edges so a tiling texture has no seams. */
-function wrapped(size, x, y, reach, draw) {
+export function wrapped(size, x, y, reach, draw) {
   for (const ox of [0, -size, size]) {
     for (const oy of [0, -size, size]) {
       if ((ox && Math.abs(x + ox - size / 2) > size / 2 + reach) || (oy && Math.abs(y + oy - size / 2) > size / 2 + reach)) continue;
@@ -74,7 +75,7 @@ function wrapped(size, x, y, reach, draw) {
   }
 }
 
-function normalFromHeight(heightCanvas, strength) {
+export function normalFromHeight(heightCanvas, strength) {
   const w = heightCanvas.width;
   const h = heightCanvas.height;
   const src = heightCanvas.getContext('2d').getImageData(0, 0, w, h).data;
@@ -438,5 +439,157 @@ export function groundTextures({ seed = 21, size = 1024 } = {}) {
     grassMap: toTexture(gc, { repeat: true }),
     litterMap: toTexture(lc, { repeat: true }),
     normalMap: normalFromHeight(hc, 3.2),
+  };
+}
+
+/**
+ * Weathered stone crusted with lichen, tiling: grey rock with speckle, and rosettes of
+ * crustose lichen (pale grey-green, ochre, chalky white) with lobed edges, paler rims and
+ * dark fruiting dots. Meant for triplanar mapping (see the rock in ruralGermany.js).
+ */
+export function lichenRockTexture({ seed = 17, size = 1024 } = {}) {
+  const rng = new Rng(seed);
+  const [c, g] = makeCanvas(size);
+  g.fillStyle = '#6e6a62';
+  g.fillRect(0, 0, size, size);
+  const k = size / 1024;
+  const blot = (x, y, r, fill) =>
+    wrapped(size, x, y, r, (px, py) => {
+      g.fillStyle = fill;
+      g.beginPath();
+      g.arc(px, py, r, 0, Math.PI * 2);
+      g.fill();
+    });
+  // Stone: broad tone, then grit.
+  for (let i = 0; i < 70; i++) blot(rng.float(0, size), rng.float(0, size), rng.float(40, 160) * k, rng.pick(['rgba(40,38,34,0.12)', 'rgba(150,146,136,0.1)', 'rgba(90,84,72,0.12)']));
+  for (let i = 0; i < 2600; i++) blot(rng.float(0, size), rng.float(0, size), rng.float(0.6, 2.2) * k, rng.pick(['rgba(30,28,25,0.35)', 'rgba(170,166,156,0.25)']));
+
+  const kinds = [
+    { body: '#a9b48f', rim: '#c4cdb0', dots: 'rgba(60,58,40,0.8)', weight: 0.5 }, // grey-green
+    { body: '#c09a45', rim: '#d8b764', dots: 'rgba(120,70,20,0.85)', weight: 0.25 }, // ochre
+    { body: '#cfd0c4', rim: '#e2e2d8', dots: 'rgba(40,40,40,0.7)', weight: 0.25 }, // chalky white
+  ];
+  const pickKind = () => {
+    let r = rng.next();
+    for (const kd of kinds) if ((r -= kd.weight) <= 0) return kd;
+    return kinds[0];
+  };
+  for (let i = 0; i < 150; i++) {
+    const kd = pickKind();
+    const x = rng.float(0, size);
+    const y = rng.float(0, size);
+    const r = rng.float(14, 46) * k * (rng.chance(0.15) ? 1.8 : 1);
+    const lobes = rng.int(7, 13);
+    const phase = rng.float(0, Math.PI * 2);
+    const jitter = Array.from({ length: lobes }, () => rng.float(0.75, 1.15));
+    const dots = Array.from({ length: rng.int(3, 10) }, () => [rng.float(0, Math.PI * 2), rng.float(0, 0.6), rng.float(1, 2.6) * k]);
+    wrapped(size, x, y, r * 1.3, (px, py) => {
+      const outline = (scale) => {
+        g.beginPath();
+        for (let a = 0; a <= 64; a++) {
+          const t = (a / 64) * Math.PI * 2;
+          const lobe = jitter[Math.floor((t / (Math.PI * 2)) * lobes) % lobes];
+          const rr = r * scale * (lobe + 0.08 * Math.sin(t * lobes * 2 + phase));
+          const ax = px + Math.cos(t) * rr;
+          const ay = py + Math.sin(t) * rr;
+          if (a === 0) g.moveTo(ax, ay);
+          else g.lineTo(ax, ay);
+        }
+        g.closePath();
+      };
+      outline(1);
+      g.fillStyle = kd.rim;
+      g.globalAlpha = 0.95;
+      g.fill();
+      outline(0.82);
+      g.fillStyle = kd.body;
+      g.fill();
+      g.globalAlpha = 1;
+      for (const [a, d, s] of dots) {
+        g.fillStyle = kd.dots;
+        g.beginPath();
+        g.arc(px + Math.cos(a) * d * r, py + Math.sin(a) * d * r, s, 0, Math.PI * 2);
+        g.fill();
+      }
+    });
+  }
+  return toTexture(c, { repeat: true });
+}
+
+/**
+ * Mountain surfaces that tile every few metres, for createGround's two-texture blend:
+ *   snowMap    – wind-packed snow: soft drifts, ripples and a faint sparkle
+ *   rockMap    – bare grey rock with cracks and darker bands
+ *   normalMap  – shared relief (drifts and cracks)
+ */
+export function mountainTextures({ seed = 23, size = 1024 } = {}) {
+  const k = size / 1024;
+  const rng = new Rng(seed);
+  const [sc, sg] = makeCanvas(size);
+  const [rc, rg] = makeCanvas(size);
+  const [hc, hg] = makeCanvas(size);
+  hg.fillStyle = '#808080';
+  hg.fillRect(0, 0, size, size);
+  const blot = (g, x, y, r, fill) =>
+    wrapped(size, x, y, r, (px, py) => {
+      g.fillStyle = fill;
+      g.beginPath();
+      g.arc(px, py, r, 0, Math.PI * 2);
+      g.fill();
+    });
+
+  // Snow
+  sg.fillStyle = '#eef1f5';
+  sg.fillRect(0, 0, size, size);
+  for (let i = 0; i < 90; i++) {
+    const x = rng.float(0, size);
+    const y = rng.float(0, size);
+    const r = rng.float(40, 160) * k;
+    blot(sg, x, y, r, rng.pick(['rgba(196,208,224,0.16)', 'rgba(255,255,255,0.2)', 'rgba(210,218,232,0.12)']));
+    blot(hg, x, y, r, rng.pick(['rgba(255,255,255,0.12)', 'rgba(0,0,0,0.1)']));
+  }
+  // Wind ripples: long, low ridges.
+  for (let i = 0; i < 70; i++) {
+    const y0 = rng.float(0, size);
+    const amp = rng.float(6, 20) * k;
+    const ph = rng.float(0, Math.PI * 2);
+    const w = rng.float(3, 9) * k;
+    for (const oy of [0, -size, size]) {
+      hg.strokeStyle = 'rgba(255,255,255,0.14)';
+      hg.lineWidth = w;
+      hg.beginPath();
+      for (let x = 0; x <= size; x += 16) {
+        const y = y0 + oy + Math.sin((x / size) * Math.PI * 2 * 2 + ph) * amp;
+        if (x === 0) hg.moveTo(x, y);
+        else hg.lineTo(x, y);
+      }
+      hg.stroke();
+    }
+  }
+  for (let i = 0; i < 1400; i++) blot(sg, rng.float(0, size), rng.float(0, size), rng.float(0.5, 1.4) * k, 'rgba(255,255,255,0.9)');
+
+  // Rock
+  rg.fillStyle = '#6f6c68';
+  rg.fillRect(0, 0, size, size);
+  for (let i = 0; i < 120; i++) blot(rg, rng.float(0, size), rng.float(0, size), rng.float(20, 120) * k, rng.pick(['rgba(40,38,36,0.16)', 'rgba(150,146,140,0.14)', 'rgba(96,88,80,0.14)']));
+  for (let i = 0; i < 3000; i++) blot(rg, rng.float(0, size), rng.float(0, size), rng.float(0.6, 2.4) * k, rng.pick(['rgba(30,28,26,0.35)', 'rgba(190,186,178,0.28)']));
+  for (let i = 0; i < 40; i++) {
+    let x = rng.float(0, size);
+    let y = rng.float(0, size);
+    const w = rng.float(1.2, 3.5) * k;
+    const pts = [[x, y]];
+    for (let s = 0; s < 10; s++) pts.push([(x += rng.float(-30, 30) * k), (y += rng.float(10, 40) * k)]);
+    for (const [g, style] of [[rg, 'rgba(20,18,16,0.7)']]) { // cracks in the rock colour only, not the shared relief
+      g.strokeStyle = style;
+      g.lineWidth = w;
+      g.beginPath();
+      pts.forEach(([px, py], j) => (j ? g.lineTo(px, py) : g.moveTo(px, py)));
+      g.stroke();
+    }
+  }
+  return {
+    snowMap: toTexture(sc, { repeat: true }),
+    rockMap: toTexture(rc, { repeat: true }),
+    normalMap: normalFromHeight(hc, 2.6),
   };
 }

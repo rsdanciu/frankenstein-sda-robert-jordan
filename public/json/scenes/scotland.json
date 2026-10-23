@@ -2,35 +2,26 @@
   "id": "scotland",
   "quotes": [
     {
-      "quote": "[PLACEHOLDER]",
-      "analysis": "[PLACEHOLDER]",
+      "label": "The destroyed female monster on the workbench",
+      "quote": "After the Monster demands for Frankenstein to build him a female, he follows him to Scotland. He watches Frankenstein start the work, almost complete it, and then destroy it entirely. The Monster storms in lamenting to Frankenstein, complaining that every man shall “find a wife for his bosom, and each beast have its mate, and [he] be alone” (Shelley 122). ",
+      "analysis": "Watching his one hope for happiness dwindle, the Monster loses his last bit of faith in Unity, leading him to take on a new purpose of Frankenstein’s misery. Frankenstein’s realization that he will never fit into the assumed world order causes him to lose faith that there is a coherent world order at all, demonstrating his collapse of Unity. ",
       "page": "[PLACEHOLDER]",
       "isNietzsche": false,
-      "objectId": "scotland-object-1",
+      "objectId": "scotland-remains",
       "order": 1,
-      "nihilism": { "truth": 0, "unity": 0, "purpose": 0 },
+      "nihilism": { "truth": 0, "unity": 0.15, "purpose": 0.3 },
       "step": 1,
       "required": true
     },
     {
-      "quote": "[PLACEHOLDER]",
-      "analysis": "[PLACEHOLDER]",
+      "label": "The Monster’s clenched hand",
+      "quote": "He states that “revenge” will be “dearer than light or food” to him (Shelley 123).",
+      "analysis": "With his faith in Unity now broken, the Monster reconstructs his purpose from one about finding his place in the world to making Frankenstein miserable. Prioritizing revenge over the natural substances that sustain life highlights how the Monster’s rage at the world has turned his one desire to spite Frankenstein. This new purpose raises the question of whether the hate and anger will be able to sustain the Monster’s will to keep going. If not, he may slip further into psychological Nihilism. ",
       "page": "[PLACEHOLDER]",
       "isNietzsche": false,
-      "objectId": "scotland-object-2",
+      "objectId": "scotland-hand",
       "order": 2,
-      "nihilism": { "truth": 0, "unity": 0, "purpose": 0 },
-      "step": 1,
-      "required": false
-    },
-    {
-      "quote": "[PLACEHOLDER]",
-      "analysis": "[PLACEHOLDER]",
-      "page": "[PLACEHOLDER]",
-      "isNietzsche": false,
-      "objectId": "scotland-object-3",
-      "order": 3,
-      "nihilism": { "truth": 0, "unity": 0, "purpose": 0 },
+      "nihilism": { "truth": 0, "unity": 0, "purpose": -0.2 },
       "step": 2,
       "required": true
     }

@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { BaseScene } from '../BaseScene.js';
-import { el } from '../../ui/dom.js';
 import { IS_COARSE_POINTER } from '../../core/renderer.js';
 import { tween, wait, Ease } from '../../core/tween.js';
 import { visualParams } from '../../nihilism/nihilism.js';
@@ -112,8 +111,6 @@ export default class IngolstadtScene extends BaseScene {
     this.songTimer = 2;
     this.birdsHome = false;
     this.birdsMoving = false;
-    this.labelHovered = null;
-    this.pois = new Map();
     this.disposables = [];
     this.songRng = new Rng(808);
     this.glance = { timer: 4, away: 0 };
@@ -333,7 +330,11 @@ export default class IngolstadtScene extends BaseScene {
     this.#buildBranchAndBirds();
     this.#buildStreamTarget();
     this.#buildBerryBush();
-    for (const id of Object.values(IDS)) if (this.interactables.has(id)) this.#addPoi(id);
+    const berries = this.interactables.get(IDS.berries);
+    this.addComponentLabel(IDS.moon, (t) => this.#moonLabelPoint(t));
+    this.addComponentLabel(IDS.branch, (t) => t.copy(this.perchCenter).add(_w.set(0, 0.78, 0)));
+    this.addComponentLabel(IDS.stream, (t) => t.copy(this.streamLabelPoint));
+    this.addComponentLabel(IDS.berries, (t) => t.copy(berries.userData.lookPoint).add(_w.set(0, 0.62, 0)));
   }
 
   // ─── Forest ─────────────────────────────────────────────────────────────────
@@ -901,37 +902,6 @@ export default class IngolstadtScene extends BaseScene {
 
   // ─── Labels ─────────────────────────────────────────────────────────────────
 
-  #addPoi(id) {
-    const quote = this.tracker.quotesFor(id)[0];
-    const required = this.tracker.objectState(id).required;
-    const name = quote?.label ?? id;
-    const node = el(
-      'button',
-      {
-        className: `poi ${required ? 'is-required' : 'is-optional'} is-hidden`,
-        attrs: { type: 'button', 'aria-label': required ? name : `${name} (optional)` },
-        on: {
-          click: () => this.openComponent(id),
-          pointerenter: () => this.#setLabelHover(id),
-          pointerleave: () => this.#setLabelHover(null),
-          focus: () => this.#setLabelHover(id),
-          blur: () => this.#setLabelHover(null),
-        },
-      },
-      [el('span', { className: 'poi-dot' }), el('span', { className: 'poi-name', text: name })],
-    );
-    node.disabled = true;
-    this.pois.set(id, node);
-    const object = this.interactables.get(id);
-    const points = {
-      [IDS.moon]: (t) => this.#moonLabelPoint(t),
-      [IDS.branch]: (t) => t.copy(this.perchCenter).add(_w.set(0, 0.78, 0)),
-      [IDS.stream]: (t) => t.copy(this.streamLabelPoint),
-      [IDS.berries]: (t) => t.copy(object.userData.lookPoint).add(_w.set(0, 0.62, 0)),
-    };
-    this.labels.add(id, node, points[id] ?? ((t) => object.getWorldPosition(t)), () => object.visible);
-  }
-
   #moonLabelPoint(t) {
     const d = this.sky.moonDir;
     _up.set(0, 1, 0).addScaledVector(d, -d.y).normalize();
@@ -940,31 +910,11 @@ export default class IngolstadtScene extends BaseScene {
     return t.copy(this.camera.position).addScaledVector(_w, 150);
   }
 
-  #setLabelHover(id) {
-    this.labelHovered = id;
-    const object = id ? this.interactables.get(id) : null;
-    if (object) this.monster.lookAt(object.userData.lookPoint ?? object.getWorldPosition(new THREE.Vector3()));
-  }
-
-  #updatePoi(id, state, hovered, object) {
-    const node = this.pois.get(id);
-    if (!node) return;
-    const visible = this.interactive && state.active && object.visible;
-    const key = `${visible}${state.pending}${state.viewed}${hovered}`;
-    if (node.dataset.key === key) return;
-    node.dataset.key = key;
-    node.classList.toggle('is-hidden', !visible);
-    node.classList.toggle('is-pending', state.pending);
-    node.classList.toggle('is-viewed', state.viewed);
-    node.classList.toggle('is-hovered', hovered);
-    node.disabled = !visible;
-  }
-
   // ─── Hooks ──────────────────────────────────────────────────────────────────
 
   styleInteractable(object, state, t) {
     const id = object.userData.pickId;
-    const hovered = (state.hovered || this.labelHovered === id) && state.active;
+    const hovered = state.hovered && state.active;
     const pulse = (speed) => 0.5 + 0.5 * Math.sin(t * speed);
     if (id === IDS.moon) {
       const target = hovered ? 1 : state.pending ? 0.25 + 0.3 * pulse(2.2) : 0;
@@ -977,7 +927,6 @@ export default class IngolstadtScene extends BaseScene {
     } else if (id === IDS.berries) {
       this.berryMaterial.emissiveIntensity = hovered ? 0.22 : state.pending ? 0.015 * pulse(1.8) : 0;
     }
-    this.#updatePoi(id, state, hovered, object);
   }
 
   onQuoteOpened(quote) {
@@ -1002,7 +951,6 @@ export default class IngolstadtScene extends BaseScene {
 
   onDispose() {
     for (const d of this.disposables) d.dispose();
-    this.labelHovered = null;
   }
 
   // ─── Time of day ────────────────────────────────────────────────────────────
