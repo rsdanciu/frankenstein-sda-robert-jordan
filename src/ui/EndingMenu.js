@@ -1,4 +1,4 @@
-import { el, reveal, conceal, fmt2, signed } from './dom.js';
+import { el, reveal, conceal, fmt2, signed, shownChange } from './dom.js';
 import { COMPONENTS } from '../nihilism/nihilism.js';
 import { COMPONENT_NAMES } from './HUD.js';
 
@@ -89,7 +89,7 @@ export class EndingMenu {
     const rows = this.world.locations.map((loc) => {
       const end = ends.get(loc.id);
       if (!end) return el('tr', { className: 'is-missing' }, [el('th', { text: `${loc.order}. ${loc.name}`, attrs: { scope: 'row' } }), el('td', { text: 'not visited', attrs: { colspan: '5' } })]);
-      const change = prev === null ? 0 : end.value - prev;
+      const change = prev === null ? 0 : shownChange(prev, end.value);
       prev = end.value;
       return el('tr', {}, [
         el('th', { text: `${loc.order}. ${loc.name}`, attrs: { scope: 'row' } }),

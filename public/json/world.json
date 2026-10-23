@@ -5,7 +5,7 @@
   },
   "nihilismExplanation": {
     "title": "Nihilism Coefficient",
-    "text": "[PLACEHOLDER]"
+    "text": "The Nihilism coefficient is used throughout the entire journey. It is made up of three components: Truth, Unity, and Purpose. Each of these components have a value from 0 to 1. The overall Nihilism Coefficient is calculated by taking the average of these components. The higher the value of a component, the more the Monster has abandoned that specific value. The higher the Nihilism Coefficient, the closer the Monster is to psychological Nihilism. After each quote and analysis, there is a detailed breakdown of how that analysis impacts the Nihilism Coefficient."
   },
   "start": { "truth": 0, "unity": 0, "purpose": 0 },
   "locations": [

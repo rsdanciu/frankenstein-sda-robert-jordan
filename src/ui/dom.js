@@ -46,6 +46,14 @@ export function fmt2(v) {
   return v.toFixed(2);
 }
 
+/**
+ * The change between two values as it is shown: the difference of the two values rounded
+ * to two places, so "0.22 → 0.33" reads "+0.11" (the unrounded change, 0.1167, would show +0.12).
+ */
+export function shownChange(from, to) {
+  return Math.round(to * 100) / 100 - Math.round(from * 100) / 100;
+}
+
 export function signed(v) {
   const s = v.toFixed(2);
   return v > 0 ? `+${s}` : v < 0 ? s : '±0.00';

@@ -1,10 +1,11 @@
-import { el, reveal, conceal, fmt2, signed } from './dom.js';
+import { el, reveal, conceal, fmt2, signed, shownChange } from './dom.js';
 import { COMPONENTS, averageOf } from '../nihilism/nihilism.js';
 import { COMPONENT_NAMES } from './HUD.js';
 
 // The menu that opens when a scene component is clicked. Three pages, advanced with
 // Enter or the Next button:
-//   1. Quote + page number   (Nietzsche quotes get their own styling: .is-nietzsche)
+//   1. Quote                 (Nietzsche quotes get their own styling: .is-nietzsche;
+//                            the students' quotes carry their own citations)
 //   2. Analysis
 //   3. Impact on the Nihilism Coefficient — the quote's delta is applied when this
 //      page is first reached, so the world shifts while the numbers are on screen.
@@ -117,7 +118,6 @@ function quotePage(q) {
   return el('figure', { className: `quote-card${q.isNietzsche ? ' is-nietzsche' : ''}` }, [
     q.isNietzsche && el('span', { className: 'nietzsche-mark', text: 'Nietzsche' }),
     el('blockquote', { className: 'quote-text', text: q.quote }),
-    el('figcaption', { className: 'quote-cite', text: `p. ${q.page}` }),
   ]);
 }
 
@@ -131,10 +131,10 @@ function analysisPage(q) {
 
 function impactPage(impact) {
   const { before, after } = impact;
-  const total = averageOf(after) - averageOf(before);
+  const total = shownChange(averageOf(before), averageOf(after));
 
   const rows = COMPONENTS.map((k) => {
-    const d = after[k] - before[k];
+    const d = shownChange(before[k], after[k]);
     return el('div', { className: 'impact-row' }, [
       el('span', { className: 'impact-name' }, [el('span', { className: `key-line series-${k}` }), COMPONENT_NAMES[k]]),
       el('span', { className: 'impact-track' }, [

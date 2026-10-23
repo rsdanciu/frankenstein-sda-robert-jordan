@@ -39,6 +39,7 @@ turn drives the look of the world.
 |---|---|---|
 | world.json | `meta.title` | Frankenstein SDA |
 | world.json | `meta.subtitle` | Robert Danciu and Jordan Abell |
+| world.json | `nihilismExplanation.text` | the students' description of the Nihilism Coefficient, exactly as supplied in Prompt 11 |
 | world.json | `ending.title` | The Monster’s Journey Has Ended |
 | world.json | `ending.text` | The Monster has reached psychological nihilism |
 | bibliography.json | `title`, `entries` | Works Cited, with the Nietzsche and Shelley entries exactly as supplied |
@@ -68,7 +69,8 @@ turn drives the look of the world.
 | The Arctic and Walton's boat scene | design | the whole brief (Walton's ship in the ice, dark water, snowy land, the wooden cabin and its opening, Frankenstein under a blanket, the Monster over him slowing as Purpose rises, Walton, the cabin cooling); see section 5f |
 | Ending | flow | Prompt 10: the overview of the coefficient, then the works cited, where after 10 seconds a button returns to the start page (section 6) |
 
-Still `[PLACEHOLDER]`: `nihilismExplanation.text` and every `page` field. Every scene is now designed.
+Nothing is `[PLACEHOLDER]` any more: every scene is designed, the explanation is written, and the
+`page` field was removed in Prompt 11 (the quotes carry their own citations).
 
 The `label` values in ingolstadt.json ("Moon", "Tree branch", "Stream", "Berry bush") are short
 UI names taken from the students' own descriptions of the objects; they may be renamed freely.
@@ -190,7 +192,7 @@ All runtime JSON is fetched with `publicUrl(path)` = `import.meta.env.BASE_URL +
 ```json
 {
   "meta":   { "title": "Frankenstein SDA", "subtitle": "Robert Danciu and Jordan Abell" },
-  "nihilismExplanation": { "title": "Nihilism Coefficient", "text": "[PLACEHOLDER]" },
+  "nihilismExplanation": { "title": "Nihilism Coefficient", "text": "The Nihilism coefficient is used throughout …" },
   "start":  { "truth": 0, "unity": 0, "purpose": 0 },
   "locations": [
     {
@@ -229,7 +231,6 @@ Current ids, in order: `ingolstadt`, `ruralGermany`, `genevaMountains`, `scotlan
     {
       "quote": "[PLACEHOLDER]",
       "analysis": "[PLACEHOLDER]",
-      "page": "[PLACEHOLDER]",
       "isNietzsche": false,
       "objectId": "ingolstadt-object-1",
       "order": 1,
@@ -245,7 +246,6 @@ Current ids, in order: `ingolstadt`, `ruralGermany`, `genevaMountains`, `scotlan
 |---|---|
 | `quote` | the quotation text |
 | `analysis` | the students' analysis |
-| `page` | page number (string or number) |
 | `isNietzsche` | `true` → Nietzsche styling (Fraktur "Nietzsche" seal, italic, crimson-tinted glass) |
 | `objectId` | id of the 3D object that reveals this quote (the scene registers an object with this id) |
 | `order` | order of the quote within the scene (sorting and validation order within a step) |
@@ -257,7 +257,10 @@ Current ids, in order: `ingolstadt`, `ruralGermany`, `genevaMountains`, `scotlan
 | `text` | *(for `"menu": "single"`)* the note's only page |
 
 A one-page note counts as viewed as soon as it opens; its `nihilism` delta (0 in Ingolstadt) is
-applied then, since it has no Impact page. `quote` / `analysis` / `page` are not used for notes.
+applied then, since it has no Impact page. `quote` / `analysis` are not used for notes.
+
+There is no `page` field: the students' quotes include their citations, e.g. "(Shelley 69)", so the
+quote menu shows no separate page line (removed in Prompt 11; a leftover `page` key is ignored).
 
 The number of quotes, steps, and which are required are the students' decisions; every scene file now
 holds the students' own.
@@ -347,7 +350,9 @@ Everything coefficient-related is in this single file, with the mapping document
   - `setEnabled(objectId, true|false)` forces a component on/off; `setEnabled(objectId, null)`
     returns it to the step rule (for scene-specific sequencing);
   - complete when every required quote is viewed (zero required → completes on arrival).
-- **Quote menu** (`QuoteModal`): page 1 quote + page, page 2 analysis, page 3 impact. Enter or
+- **Quote menu** (`QuoteModal`): page 1 quote, page 2 analysis, page 3 impact. The impact page shows
+  each component and the coefficient before → after; each change shown is the difference of the two
+  values as shown (two places), so the numbers on screen always add up. Enter or
   **Next** advances; Esc/× closes early. The delta is applied when page 3 is first reached, so the
   world changes while the impact is on screen. A quote counts as viewed only once it reaches page 3.
   Re-opening shows the original impact without re-applying it.
@@ -688,6 +693,8 @@ clothes): seated (`sit`) or standing, `setPose`, `lookAt`, `setTalking` (gesture
 | Deploy on every push to `main` (manual run kept) | Prompt 7 asked to finish live hosting: what is on `main` is what is live, with no extra step to forget. Until then deploys were manual-only, while the brief was localhost-only. |
 | Deploy concurrency does not cancel a running deploy | Cancelling a deploy halfway can leave Pages in a failed state; a newer push waits and then replaces it. |
 | `configure-pages` step in the workflow | Without Pages enabled, the run fails at the start with GitHub's own explanation instead of at the last step. |
+| Shown changes are the difference of the shown (rounded) values | A raw change can round differently from the two values beside it ("0.22 → 0.33" beside "+0.12"); on screen the numbers must add up. The stored values stay exact. |
+| No page field | Prompt 11: every quote already includes its citation, so a separate page line was redundant. |
 | Explanation popup is a generic `InfoModal` fed from JSON | The text stays editable without touching code, and the same popup can show other long text later. |
 | Popup has a large minimum height (≤ 62% of the screen) | Reads as a "large popup" even before the explanation is written; long text scrolls inside it. |
 | Bibliography heading read from JSON; optional `*italics*` | The students control the heading and any formatting; entries are shown exactly as written. |
@@ -753,12 +760,11 @@ These are **theirs** to make. Claude must not choose them.
   Rural Germany (51.16, 10.45, centre of Germany), Scotland (56.49, −4.20, centre of Scotland),
   The path to Rural Russia (57.0, 40.0), The Arctic and Walton's boat (79.5, 5.0). Geneva (Mountains)
   uses Geneva (46.20, 6.14). Edit in world.json.
-- All remaining content: the Nihilism Coefficient explanation, quotes, analysis, pages,
-  `isNietzsche`, quote counts/steps/required flags, deltas, start and end values.
+- Content and values are now all supplied by the students; any change to quotes, analysis,
+  `isNietzsche`, quote counts/steps/required flags, deltas, start and end values is theirs to make.
 - The Monster's look (`MONSTER_STYLE`) and each scene's design.
 - **Ingolstadt, raised in Prompt 3 (awaiting the students' answer):**
-  - *Page fields* are still `[PLACEHOLDER]` (the quotes already end with "(Shelley 71)"). Fill
-    `page`, or ask for the "p." line to be hidden when empty.
+  - (Settled by Prompt 11: the `page` field is removed; the quotes carry their citations.)
   - *Berry bush:* the brief says "Object 4: Required: Another optional object". It is built as
     **optional** (matching "optional", the one-step menu and "the optional objects"). Set
     `"required": true` if it should be required.
@@ -767,7 +773,6 @@ These are **theirs** to make. Claude must not choose them.
   - The night/morning holds and the continuous cycle afterwards (see section 5a) are an
     interpretation of "continuous day and night" plus the two interaction states; `TIME` changes it.
 - **Rural Germany, raised in Prompt 4:**
-  - `page` fields are `[PLACEHOLDER]` (the quotes carry their own citations), as in Ingolstadt.
   - Labels are the object headings verbatim, including the full stop in "The reflection of the
     Monster’s face in the puddle." Shorten them in the JSON if wanted.
   - Choices made to build the brief, all easy to change: three family members (older man, woman,
@@ -779,14 +784,12 @@ These are **theirs** to make. Claude must not choose them.
     open by itself a few seconds after the last menu closes.
   - The cabin entrance's last line ("This is a Nietzsche quote, ensuring it has the special
     formatting.") was treated as an instruction; the quote has the Nietzsche styling.
-  - `page` fields are `[PLACEHOLDER]` (the quotes carry their own citations).
   - Choices made to build the brief: the ship (two masts, frozen in) and its surroundings; the cabin as
     a deckhouse aft with the opening over the stern; the cot along the starboard wall; Walton's place
     and coat; Frankenstein's pallor; when the Monster turns toward the opening (after his face); how
     slow he becomes (`SLOWEST`); the cabin's warm and cold colours.
 - **The path to Rural Russia, raised in Prompt 8:**
   - Rural Russia starts at {1, 1, 0.1}, Scotland's end value, as the brief says.
-  - `page` fields are `[PLACEHOLDER]` (the quotes carry their own citations).
   - Choices made to build the brief: a low winter sun and light snowfall; the path's course and
     length; which tree (a bare one, right of the path) and which side of the path the rock is on;
     the notes as nailed and leaning paper rather than marks cut into bark or stone; Frankenstein

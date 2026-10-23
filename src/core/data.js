@@ -82,7 +82,6 @@ function normalizeScene(id, raw) {
       text: q.text ?? '',
       quote: q.quote ?? '',
       analysis: q.analysis ?? '',
-      page: q.page ?? '',
       isNietzsche: q.isNietzsche === true,
       objectId: String(q.objectId ?? `${id}-missing-${index + 1}`),
       order: Number.isFinite(q.order) ? q.order : index + 1,

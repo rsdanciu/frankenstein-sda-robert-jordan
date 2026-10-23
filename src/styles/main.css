@@ -938,13 +938,6 @@ body {
   white-space: pre-line;
 }
 
-.quote-cite {
-  margin-top: 14px;
-  font-size: 13px;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
 /* Nietzsche quotes: crimson-tinted glass, a Fraktur seal and italic setting */
 .modal.is-nietzsche {
   background: var(--glass-bg), var(--nietzsche-glass), var(--glass-tint);

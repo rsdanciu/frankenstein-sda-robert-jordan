@@ -150,7 +150,6 @@ const LIGHT = { key: 1.4, hemi: 2.6, fill: 1.6 };
 const WARM = { lamp: 4.2, cold: 2.4, spill: 3.5 };
 const AMBIENT_WARM = new THREE.Color('#3a2414');
 const AMBIENT_COLD = new THREE.Color('#1e2736');
-const _v = new THREE.Vector3();
 const _w = new THREE.Vector3();
 
 export default class ScotlandScene extends BaseScene {
